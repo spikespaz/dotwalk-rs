@@ -4,7 +4,7 @@ use std::io::prelude::*;
 use NodeLabels::*;
 
 use super::LabelText::{self, EscStr, HtmlStr, LabelStr};
-use super::{render, Edges, GraphWalk, Id, Labeller, Nodes, Style};
+use super::{render, Arrow, ArrowVertex, Edges, GraphWalk, Id, Labeller, Nodes, Side, Style};
 
 /// each node is an index in a vector in the graph.
 type Node = usize;
@@ -13,6 +13,8 @@ struct Edge {
     to: usize,
     label: &'static str,
     style: Style,
+    start_arrow: Arrow,
+    end_arrow: Arrow,
 }
 
 fn edge(from: usize, to: usize, label: &'static str, style: Style) -> Edge {
@@ -21,6 +23,26 @@ fn edge(from: usize, to: usize, label: &'static str, style: Style) -> Edge {
         to,
         label,
         style,
+        start_arrow: Arrow::none(),
+        end_arrow: Arrow::normal(),
+    }
+}
+
+fn edge_with_arrows(
+    from: usize,
+    to: usize,
+    label: &'static str,
+    style: Style,
+    start_arrow: Arrow,
+    end_arrow: Arrow,
+) -> Edge {
+    Edge {
+        from,
+        to,
+        label,
+        style,
+        start_arrow,
+        end_arrow,
     }
 }
 
@@ -131,6 +153,14 @@ impl<'a> Labeller<'a> for LabelledGraph {
     }
     fn edge_style(&'a self, e: &&'a Edge) -> Style {
         e.style
+    }
+
+    fn edge_end_arrow(&'a self, e: &&'a Edge) -> Arrow {
+        e.end_arrow.clone()
+    }
+
+    fn edge_start_arrow(&'a self, e: &&'a Edge) -> Arrow {
+        e.start_arrow.clone()
     }
 }
 
@@ -275,6 +305,52 @@ fn single_edge_with_style() {
     N0[label="N0"];
     N1[label="N1"];
     N0 -> N1[label="E"][style="bold"];
+}
+"#
+    );
+}
+
+#[test]
+fn test_some_arrow() {
+    let labels: Trivial = SomeNodesLabelled(vec![Some("A"), None]);
+    let styles = Some(vec![Style::None, Style::Dotted]);
+    let start = Arrow::none();
+    let end = Arrow::from_arrow(ArrowVertex::crow());
+    let result = test_input(LabelledGraph::new(
+        "test_some_labelled",
+        labels,
+        vec![edge_with_arrows(0, 1, "A-1", Style::None, start, end)],
+        styles,
+    ));
+    assert_eq!(
+        result.unwrap(),
+        r#"digraph test_some_labelled {
+    N0[label="A"];
+    N1[label="N1"][style="dotted"];
+    N0 -> N1[label="A-1"][arrowhead="crow"];
+}
+"#
+    );
+}
+
+#[test]
+fn test_some_arrows() {
+    let labels: Trivial = SomeNodesLabelled(vec![Some("A"), None]);
+    let styles = Some(vec![Style::None, Style::Dotted]);
+    let start = Arrow::from_arrow(ArrowVertex::tee());
+    let end = Arrow::from_arrow(ArrowVertex::Crow(Side::Left));
+    let result = test_input(LabelledGraph::new(
+        "test_some_labelled",
+        labels,
+        vec![edge_with_arrows(0, 1, "A-1", Style::None, start, end)],
+        styles,
+    ));
+    assert_eq!(
+        result.unwrap(),
+        r#"digraph test_some_labelled {
+    N0[label="A"];
+    N1[label="N1"][style="dotted"];
+    N0 -> N1[label="A-1"][arrowhead="lcrow" dir="both" arrowtail="tee"];
 }
 "#
     );

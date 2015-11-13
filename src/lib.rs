@@ -504,6 +504,18 @@ pub trait Labeller<'a> {
         Style::None
     }
 
+    /// Maps `e` to arrow style that will be used on the end of an edge.
+    /// Defaults to normal.
+    fn edge_end_arrow(&'a self, _e: &Self::Edge) -> Arrow {
+        Arrow::normal()
+    }
+
+    /// Maps `e` to arrow style that will be used on the end of an edge.
+    /// Defaults to no arrow style.
+    fn edge_start_arrow(&'a self, _e: &Self::Edge) -> Arrow {
+        Arrow::none()
+    }
+
     /// Maps `e` to a style that will be used in the rendered output.
     fn edge_style(&'a self, _e: &Self::Edge) -> Style {
         Style::None
@@ -605,6 +617,7 @@ pub enum RenderOption {
 
     Fontname(String),
     DarkTheme,
+    NoArrows,
 }
 
 /// Renders directed graph `g` into the writer `w` in DOT syntax.
@@ -689,6 +702,9 @@ where
 
     for e in g.edges().iter() {
         let escaped_label = &g.edge_label(e).to_dot_string();
+        let start_arrow = &g.edge_start_arrow(e).to_dot_string();
+        let end_arrow = &g.edge_end_arrow(e).to_dot_string();
+
         write!(w, "    ")?;
         let source = g.source(e);
         let target = g.target(e);
@@ -706,6 +722,22 @@ where
             write!(text, "[style=\"{}\"]", style.as_slice()).unwrap();
         }
 
+        if !options.contains(&RenderOption::NoArrows)
+            && (start_arrow != "none" || end_arrow != "normal")
+        {
+            write!(text, "[").unwrap();
+            if end_arrow != "normal" {
+                write!(text, "arrowhead=\"{end_arrow}\"").unwrap();
+            }
+            if start_arrow != "none" {
+                if *text.last().unwrap() != b'[' {
+                    write!(text, " ").unwrap();
+                }
+                write!(text, "dir=\"both\" arrowtail=\"{start_arrow}\"").unwrap();
+            }
+            write!(text, "]").unwrap();
+        }
+
         writeln!(text, ";").unwrap();
         w.write_all(&text)?;
 
@@ -713,6 +745,228 @@ where
     }
 
     writeln!(w, "}}")
+}
+
+/// This structure holds all information that can describe an arrow connected to
+/// either start or end of an edge.
+#[derive(Clone, Hash, PartialEq, Eq)]
+pub struct Arrow {
+    pub arrows: Vec<ArrowVertex>,
+}
+
+use self::ArrowVertex::*;
+
+impl Arrow {
+    /// Arrow constructor which returns an empty arrow
+    pub fn none() -> Arrow {
+        Arrow {
+            arrows: vec![NoArrow],
+        }
+    }
+
+    /// Arrow constructor which returns a regular triangle arrow, without modifiers
+    pub fn normal() -> Arrow {
+        Arrow {
+            arrows: vec![Normal(Fill::Filled, Side::Both)],
+        }
+    }
+
+    /// Arrow constructor which returns an arrow created by a given ArrowShape.
+    pub fn from_arrow(arrow: ArrowVertex) -> Arrow {
+        Arrow {
+            arrows: vec![arrow],
+        }
+    }
+
+    /// Function which converts given arrow into a renderable form.
+    pub fn to_dot_string(&self) -> String {
+        let mut cow = String::new();
+        for arrow in &self.arrows {
+            cow.push_str(&arrow.to_dot_string());
+        }
+        cow
+    }
+}
+
+impl From<[ArrowVertex; 2]> for Arrow {
+    fn from(val: [ArrowVertex; 2]) -> Self {
+        Arrow {
+            arrows: vec![val[0], val[1]],
+        }
+    }
+}
+impl From<[ArrowVertex; 3]> for Arrow {
+    fn from(val: [ArrowVertex; 3]) -> Self {
+        Arrow {
+            arrows: vec![val[0], val[1], val[2]],
+        }
+    }
+}
+impl From<[ArrowVertex; 4]> for Arrow {
+    fn from(val: [ArrowVertex; 4]) -> Self {
+        Arrow {
+            arrows: vec![val[0], val[1], val[2], val[3]],
+        }
+    }
+}
+
+/// Arrow modifier that determines if the shape is empty or filled.
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+pub enum Fill {
+    Open,
+    Filled,
+}
+
+impl Fill {
+    pub fn as_slice(self) -> &'static str {
+        match self {
+            Fill::Open => "o",
+            Fill::Filled => "",
+        }
+    }
+}
+
+/// Arrow modifier that determines if the shape is clipped.
+/// For example `Side::Left` means only left side is visible.
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+pub enum Side {
+    Left,
+    Right,
+    Both,
+}
+
+impl Side {
+    pub fn as_slice(self) -> &'static str {
+        match self {
+            Side::Left => "l",
+            Side::Right => "r",
+            Side::Both => "",
+        }
+    }
+}
+
+/// This enumeration represents all possible arrow edge
+/// as defined in [grapviz documentation](http://www.graphviz.org/content/arrow-shapes).
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
+pub enum ArrowVertex {
+    /// No arrow will be displayed
+    NoArrow,
+    /// Arrow that ends in a triangle. Basically a normal arrow.
+    /// NOTE: there is error in official documentation, this supports both fill and side clipping
+    Normal(Fill, Side),
+    /// Arrow ending in a small square box
+    Box(Fill, Side),
+    /// Arrow ending in a three branching lines also called crow's foot
+    Crow(Side),
+    /// Arrow ending in a curve
+    Curve(Side),
+    /// Arrow ending in an inverted curve
+    ICurve(Fill, Side),
+    /// Arrow ending in an diamond shaped rectangular shape.
+    Diamond(Fill, Side),
+    /// Arrow ending in a circle.
+    Dot(Fill),
+    /// Arrow ending in an inverted triangle.
+    Inv(Fill, Side),
+    /// Arrow ending with a T shaped arrow.
+    Tee(Side),
+    /// Arrow ending with a V shaped arrow.
+    Vee(Side),
+}
+
+impl ArrowVertex {
+    /// Constructor which returns no arrow.
+    pub fn none() -> ArrowVertex {
+        ArrowVertex::NoArrow
+    }
+
+    /// Constructor which returns normal arrow.
+    pub fn normal() -> ArrowVertex {
+        ArrowVertex::Normal(Fill::Filled, Side::Both)
+    }
+
+    /// Constructor which returns a regular box arrow.
+    pub fn boxed() -> ArrowVertex {
+        ArrowVertex::Box(Fill::Filled, Side::Both)
+    }
+
+    /// Constructor which returns a regular crow arrow.
+    pub fn crow() -> ArrowVertex {
+        ArrowVertex::Crow(Side::Both)
+    }
+
+    /// Constructor which returns a regular curve arrow.
+    pub fn curve() -> ArrowVertex {
+        ArrowVertex::Curve(Side::Both)
+    }
+
+    /// Constructor which returns an inverted curve arrow.
+    pub fn icurve() -> ArrowVertex {
+        ArrowVertex::ICurve(Fill::Filled, Side::Both)
+    }
+
+    /// Constructor which returns a diamond arrow.
+    pub fn diamond() -> ArrowVertex {
+        ArrowVertex::Diamond(Fill::Filled, Side::Both)
+    }
+
+    /// Constructor which returns a circle shaped arrow.
+    pub fn dot() -> ArrowVertex {
+        ArrowVertex::Diamond(Fill::Filled, Side::Both)
+    }
+
+    /// Constructor which returns an inverted triangle arrow.
+    pub fn inv() -> ArrowVertex {
+        ArrowVertex::Inv(Fill::Filled, Side::Both)
+    }
+
+    /// Constructor which returns a T shaped arrow.
+    pub fn tee() -> ArrowVertex {
+        ArrowVertex::Tee(Side::Both)
+    }
+
+    /// Constructor which returns a V shaped arrow.
+    pub fn vee() -> ArrowVertex {
+        ArrowVertex::Vee(Side::Both)
+    }
+
+    /// Function which renders given ArrowShape into a String for displaying.
+    pub fn to_dot_string(&self) -> String {
+        let mut res = String::new();
+        match *self {
+            Box(fill, side)
+            | ICurve(fill, side)
+            | Diamond(fill, side)
+            | Inv(fill, side)
+            | Normal(fill, side) => {
+                res.push_str(fill.as_slice());
+                match side {
+                    Side::Left | Side::Right => res.push_str(side.as_slice()),
+                    Side::Both => {}
+                };
+            }
+            Dot(fill) => res.push_str(fill.as_slice()),
+            Crow(side) | Curve(side) | Tee(side) | Vee(side) => match side {
+                Side::Left | Side::Right => res.push_str(side.as_slice()),
+                Side::Both => {}
+            },
+            NoArrow => {}
+        };
+        match *self {
+            NoArrow => res.push_str("none"),
+            Normal(_, _) => res.push_str("normal"),
+            Box(_, _) => res.push_str("box"),
+            Crow(_) => res.push_str("crow"),
+            Curve(_) => res.push_str("curve"),
+            ICurve(_, _) => res.push_str("icurve"),
+            Diamond(_, _) => res.push_str("diamond"),
+            Dot(_) => res.push_str("dot"),
+            Inv(_, _) => res.push_str("inv"),
+            Tee(_) => res.push_str("tee"),
+            Vee(_) => res.push_str("vee"),
+        };
+        res
+    }
 }
 
 #[cfg(test)]
