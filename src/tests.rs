@@ -5,6 +5,7 @@ use NodeLabels::*;
 
 use super::LabelText::{self, EscStr, HtmlStr, LabelStr};
 use super::{render, Arrow, ArrowVertex, Edges, GraphWalk, Id, Labeller, Nodes, Side, Style};
+use crate::GraphKind;
 
 /// each node is an index in a vector in the graph.
 type Node = usize;
@@ -23,8 +24,8 @@ fn edge(from: usize, to: usize, label: &'static str, style: Style) -> Edge {
         to,
         label,
         style,
-        start_arrow: Arrow::none(),
-        end_arrow: Arrow::normal(),
+        start_arrow: Arrow::default(),
+        end_arrow: Arrow::default(),
     }
 }
 
@@ -314,7 +315,7 @@ fn single_edge_with_style() {
 fn test_some_arrow() {
     let labels: Trivial = SomeNodesLabelled(vec![Some("A"), None]);
     let styles = Some(vec![Style::None, Style::Dotted]);
-    let start = Arrow::none();
+    let start = Arrow::default();
     let end = Arrow::from_arrow(ArrowVertex::crow());
     let result = test_input(LabelledGraph::new(
         "test_some_labelled",
@@ -484,4 +485,120 @@ fn badly_formatted_id() {
         Ok(_) => panic!("graphviz id suddenly allows spaces, brackets and stuff"),
         Err(..) => {}
     }
+}
+
+type SimpleEdge = (Node, Node);
+
+struct DefaultStyleGraph {
+    /// The name for this graph. Used for labelling generated graph
+    name: &'static str,
+    nodes: usize,
+    edges: Vec<SimpleEdge>,
+    kind: GraphKind,
+}
+
+impl DefaultStyleGraph {
+    fn new(
+        name: &'static str,
+        nodes: usize,
+        edges: Vec<SimpleEdge>,
+        kind: GraphKind,
+    ) -> DefaultStyleGraph {
+        assert!(!name.is_empty());
+        DefaultStyleGraph {
+            name,
+            nodes,
+            edges,
+            kind,
+        }
+    }
+}
+
+impl<'a> Labeller<'a> for DefaultStyleGraph {
+    type Node = Node;
+    type Edge = &'a SimpleEdge;
+
+    fn graph_id(&'a self) -> Id<'a> {
+        Id::new(self.name).unwrap()
+    }
+    fn node_id(&'a self, n: &Node) -> Id<'a> {
+        id_name(n)
+    }
+    fn kind(&self) -> GraphKind {
+        self.kind
+    }
+}
+
+impl<'a> GraphWalk<'a> for DefaultStyleGraph {
+    type Node = Node;
+    type Edge = &'a SimpleEdge;
+
+    fn nodes(&'a self) -> Nodes<'a, Node> {
+        (0..self.nodes).collect()
+    }
+    fn edges(&'a self) -> Edges<'a, &'a SimpleEdge> {
+        self.edges.iter().collect()
+    }
+    fn source(&'a self, edge: &&'a SimpleEdge) -> Node {
+        edge.0
+    }
+    fn target(&'a self, edge: &&'a SimpleEdge) -> Node {
+        edge.1
+    }
+}
+
+fn test_input_default(g: DefaultStyleGraph) -> io::Result<String> {
+    let mut writer = Vec::new();
+    render(&g, &mut writer).unwrap();
+    let mut s = String::new();
+    Read::read_to_string(&mut &*writer, &mut s)?;
+    Ok(s)
+}
+
+#[test]
+fn default_style_graph() {
+    let r = test_input_default(DefaultStyleGraph::new(
+        "g",
+        4,
+        vec![(0, 1), (0, 2), (1, 3), (2, 3)],
+        GraphKind::Undirected,
+    ));
+    assert_eq!(
+        r.unwrap(),
+        r#"graph g {
+    N0[label="N0"];
+    N1[label="N1"];
+    N2[label="N2"];
+    N3[label="N3"];
+    N0 -- N1[label=""];
+    N0 -- N2[label=""];
+    N1 -- N3[label=""];
+    N2 -- N3[label=""];
+}
+"#
+    );
+}
+
+#[test]
+fn default_style_digraph() {
+    let r = test_input_default(DefaultStyleGraph::new(
+        "di",
+        4,
+        vec![(0, 1), (0, 2), (1, 3), (2, 3)],
+        GraphKind::Directed,
+    ));
+    assert_eq!(
+        r.unwrap(),
+        r#"digraph di {
+    N0[label="N0"];
+    N1[label="N1"];
+    N2[label="N2"];
+    N3[label="N3"];
+    N0 -> N1[label=""];
+    N0 -> N2[label=""];
+    N1 -> N3[label=""];
+    N2 -> N3[label=""];
+}
+"#
+    );
 }

@@ -499,20 +499,25 @@ pub trait Labeller<'a> {
     }
 
     /// Maps `e` to arrow style that will be used on the end of an edge.
-    /// Defaults to normal.
+    /// Defaults to generic arrow style.
     fn edge_end_arrow(&'a self, _e: &Self::Edge) -> Arrow {
-        Arrow::normal()
+        Arrow::default()
     }
 
     /// Maps `e` to arrow style that will be used on the end of an edge.
-    /// Defaults to no arrow style.
+    /// Defaults to generic arrow style.
     fn edge_start_arrow(&'a self, _e: &Self::Edge) -> Arrow {
-        Arrow::none()
+        Arrow::default()
     }
 
     /// Maps `e` to a style that will be used in the rendered output.
     fn edge_style(&'a self, _e: &Self::Edge) -> Style {
         Style::None
+    }
+
+    /// The kind of graph, defaults to `Kind::Digraph`.
+    fn kind(&self) -> GraphKind {
+        GraphKind::Directed
     }
 }
 
@@ -575,7 +580,7 @@ pub type Edges<'a, E> = Cow<'a, [E]>;
 // (The type parameters in GraphWalk should be associated items,
 // when/if Rust supports such.)
 
-/// GraphWalk is an abstraction over a directed graph = (nodes,edges)
+/// GraphWalk is an abstraction over a graph = (nodes,edges)
 /// made up of node handles `N` and edge handles `E`, where each `E`
 /// can be mapped to its source and target nodes.
 ///
@@ -614,7 +619,7 @@ pub enum RenderOption {
     NoArrows,
 }
 
-/// Renders directed graph `g` into the writer `w` in DOT syntax.
+/// Renders graph `g` into the writer `w` in DOT syntax.
 /// (Simple wrapper around `render_opts` that passes a default set of options.)
 pub fn render<'a, N, E, G, W>(g: &'a G, w: &mut W) -> io::Result<()>
 where
@@ -626,7 +631,7 @@ where
     render_opts(g, w, &[])
 }
 
-/// Renders directed graph `g` into the writer `w` in DOT syntax.
+/// Renders graph `g` into the writer `w` in DOT syntax.
 /// (Main entry point for the library.)
 pub fn render_opts<'a, N, E, G, W>(g: &'a G, w: &mut W, options: &[RenderOption]) -> io::Result<()>
 where
@@ -635,7 +640,7 @@ where
     G: Labeller<'a, Node = N, Edge = E> + GraphWalk<'a, Node = N, Edge = E>,
     W: Write,
 {
-    writeln!(w, "digraph {} {{", g.graph_id().as_slice())?;
+    writeln!(w, "{} {} {{", g.kind().keyword(), g.graph_id().as_slice())?;
 
     // Global graph properties
     let mut graph_attrs = Vec::new();
@@ -696,8 +701,8 @@ where
 
     for e in g.edges().iter() {
         let escaped_label = &g.edge_label(e).to_dot_string();
-        let start_arrow = &g.edge_start_arrow(e).to_dot_string();
-        let end_arrow = &g.edge_end_arrow(e).to_dot_string();
+        let start_arrow = g.edge_start_arrow(e);
+        let end_arrow = g.edge_end_arrow(e);
 
         write!(w, "    ")?;
         let source = g.source(e);
@@ -705,7 +710,14 @@ where
         let source_id = g.node_id(&source);
         let target_id = g.node_id(&target);
 
-        write!(text, "{} -> {}", source_id.as_slice(), target_id.as_slice()).unwrap();
+        write!(
+            text,
+            "{} {} {}",
+            source_id.as_slice(),
+            g.kind().edge_op(),
+            target_id.as_slice()
+        )
+        .unwrap();
 
         if !options.contains(&RenderOption::NoEdgeLabels) {
             write!(text, "[label={escaped_label}]").unwrap();
@@ -717,17 +729,22 @@ where
         }
 
         if !options.contains(&RenderOption::NoArrows)
-            && (start_arrow != "none" || end_arrow != "normal")
+            && (!start_arrow.is_default() || !end_arrow.is_default())
         {
             write!(text, "[").unwrap();
-            if end_arrow != "normal" {
-                write!(text, "arrowhead=\"{end_arrow}\"").unwrap();
+            if !end_arrow.is_default() {
+                write!(text, "arrowhead=\"{}\"", end_arrow.to_dot_string()).unwrap();
             }
-            if start_arrow != "none" {
+            if !start_arrow.is_default() {
                 if *text.last().unwrap() != b'[' {
                     write!(text, " ").unwrap();
                 }
-                write!(text, "dir=\"both\" arrowtail=\"{start_arrow}\"").unwrap();
+                write!(
+                    text,
+                    "dir=\"both\" arrowtail=\"{}\"",
+                    start_arrow.to_dot_string()
+                )
+                .unwrap();
             }
             write!(text, "]").unwrap();
         }
@@ -741,6 +758,33 @@ where
     writeln!(w, "}}")
 }
 
+/// Graph kind determines if `digraph` or `graph` is used as keyword
+/// for the graph.
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum GraphKind {
+    Directed,
+    Undirected,
+}
+
+impl GraphKind {
+    /// The keyword to use to introduce the graph.
+    /// Determines which edge syntax must be used, and default style.
+    fn keyword(&self) -> &'static str {
+        match *self {
+            GraphKind::Directed => "digraph",
+            GraphKind::Undirected => "graph",
+        }
+    }
+
+    /// The edgeop syntax to use for this graph kind.
+    fn edge_op(&self) -> &'static str {
+        match *self {
+            GraphKind::Directed => "->",
+            GraphKind::Undirected => "--",
+        }
+    }
+}
+
 /// This structure holds all information that can describe an arrow connected to
 /// either start or end of an edge.
 #[derive(Clone, Hash, PartialEq, Eq)]
@@ -748,20 +792,23 @@ pub struct Arrow {
     pub arrows: Vec<ArrowVertex>,
 }
 
-use self::ArrowVertex::*;
-
 impl Arrow {
+    /// Return `true` if this is a default arrow.
+    fn is_default(&self) -> bool {
+        self.arrows.is_empty()
+    }
+
     /// Arrow constructor which returns an empty arrow
     pub fn none() -> Arrow {
         Arrow {
-            arrows: vec![NoArrow],
+            arrows: vec![ArrowVertex::NoArrow],
         }
     }
 
     /// Arrow constructor which returns a regular triangle arrow, without modifiers
     pub fn normal() -> Arrow {
         Arrow {
-            arrows: vec![Normal(Fill::Filled, Side::Both)],
+            arrows: vec![ArrowVertex::normal()],
         }
     }
 
@@ -779,6 +826,13 @@ impl Arrow {
             cow.push_str(&arrow.to_dot_string());
         }
         cow
+    }
+}
+
+impl Default for Arrow {
+    /// Arrow constructor which returns a default arrow
+    fn default() -> Arrow {
+        Arrow { arrows: vec![] }
     }
 }
 
@@ -927,6 +981,8 @@ impl ArrowVertex {
     /// Function which renders given ArrowShape into a String for displaying.
     pub fn to_dot_string(&self) -> String {
         let mut res = String::new();
+
+        pub(crate) use ArrowVertex::*;
         match *self {
             Box(fill, side)
             | ICurve(fill, side)
