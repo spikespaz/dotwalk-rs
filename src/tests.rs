@@ -16,9 +16,16 @@ struct Edge {
     style: Style,
     start_arrow: Arrow,
     end_arrow: Arrow,
+    color: Option<&'static str>,
 }
 
-fn edge(from: usize, to: usize, label: &'static str, style: Style) -> Edge {
+fn edge(
+    from: usize,
+    to: usize,
+    label: &'static str,
+    style: Style,
+    color: Option<&'static str>,
+) -> Edge {
     Edge {
         from,
         to,
@@ -26,6 +33,7 @@ fn edge(from: usize, to: usize, label: &'static str, style: Style) -> Edge {
         style,
         start_arrow: Arrow::default(),
         end_arrow: Arrow::default(),
+        color,
     }
 }
 
@@ -34,6 +42,7 @@ fn edge_with_arrows(
     to: usize,
     label: &'static str,
     style: Style,
+    color: Option<&'static str>,
     start_arrow: Arrow,
     end_arrow: Arrow,
 ) -> Edge {
@@ -42,6 +51,7 @@ fn edge_with_arrows(
         to,
         label,
         style,
+        color,
         start_arrow,
         end_arrow,
     }
@@ -82,7 +92,7 @@ enum NodeLabels<L> {
 type Trivial = NodeLabels<&'static str>;
 
 impl NodeLabels<&'static str> {
-    fn to_opt_strs(self) -> Vec<Option<&'static str>> {
+    fn into_opt_strs(self) -> Vec<Option<&'static str>> {
         match self {
             UnlabelledNodes(len) => vec![None; len],
             AllNodesLabelled(lbls) => lbls.into_iter().map(Some).collect(),
@@ -109,7 +119,7 @@ impl LabelledGraph {
         let count = node_labels.len();
         LabelledGraph {
             name,
-            node_labels: node_labels.to_opt_strs(),
+            node_labels: node_labels.into_opt_strs(),
             edges,
             node_styles: match node_styles {
                 Some(nodes) => nodes,
@@ -155,7 +165,9 @@ impl<'a> Labeller<'a> for LabelledGraph {
     fn edge_style(&'a self, e: &&'a Edge) -> Style {
         e.style
     }
-
+    fn edge_color(&'a self, e: &&'a Edge) -> Option<LabelText<'a>> {
+        e.color.map(|l| LabelStr(l.into()))
+    }
     fn edge_end_arrow(&'a self, e: &&'a Edge) -> Arrow {
         e.end_arrow.clone()
     }
@@ -179,9 +191,22 @@ impl<'a> Labeller<'a> for LabelledGraphWithEscStrs {
             LabelStr(s) | EscStr(s) | HtmlStr(s) => EscStr(s),
         }
     }
+    fn node_color(&'a self, n: &Node) -> Option<LabelText<'a>> {
+        match self.graph.node_color(n) {
+            Some(LabelStr(s)) | Some(EscStr(s)) | Some(HtmlStr(s)) => Some(EscStr(s)),
+            None => None,
+        }
+    }
     fn edge_label(&'a self, e: &&'a Edge) -> LabelText<'a> {
         match self.graph.edge_label(e) {
             LabelStr(s) | EscStr(s) | HtmlStr(s) => EscStr(s),
+        }
+    }
+
+    fn edge_color(&'a self, e: &&'a Edge) -> Option<LabelText<'a>> {
+        match self.graph.edge_color(e) {
+            Some(LabelStr(s)) | Some(EscStr(s)) | Some(HtmlStr(s)) => Some(EscStr(s)),
+            None => None,
         }
     }
 }
@@ -277,7 +302,7 @@ fn single_edge() {
     let result = test_input(LabelledGraph::new(
         "single_edge",
         labels,
-        vec![edge(0, 1, "E", Style::None)],
+        vec![edge(0, 1, "E", Style::None, None)],
         None,
     ));
     assert_eq!(
@@ -297,7 +322,7 @@ fn single_edge_with_style() {
     let result = test_input(LabelledGraph::new(
         "single_edge",
         labels,
-        vec![edge(0, 1, "E", Style::Bold)],
+        vec![edge(0, 1, "E", Style::Bold, Some("red"))],
         None,
     ));
     assert_eq!(
@@ -305,7 +330,7 @@ fn single_edge_with_style() {
         r#"digraph single_edge {
     N0[label="N0"];
     N1[label="N1"];
-    N0 -> N1[label="E"][style="bold"];
+    N0 -> N1[label="E"][style="bold"][color="red"];
 }
 "#
     );
@@ -320,7 +345,7 @@ fn test_some_arrow() {
     let result = test_input(LabelledGraph::new(
         "test_some_labelled",
         labels,
-        vec![edge_with_arrows(0, 1, "A-1", Style::None, start, end)],
+        vec![edge_with_arrows(0, 1, "A-1", Style::None, None, start, end)],
         styles,
     ));
     assert_eq!(
@@ -343,7 +368,7 @@ fn test_some_arrows() {
     let result = test_input(LabelledGraph::new(
         "test_some_labelled",
         labels,
-        vec![edge_with_arrows(0, 1, "A-1", Style::None, start, end)],
+        vec![edge_with_arrows(0, 1, "A-1", Style::None, None, start, end)],
         styles,
     ));
     assert_eq!(
@@ -364,7 +389,7 @@ fn test_some_labelled() {
     let result = test_input(LabelledGraph::new(
         "test_some_labelled",
         labels,
-        vec![edge(0, 1, "A-1", Style::None)],
+        vec![edge(0, 1, "A-1", Style::None, None)],
         styles,
     ));
     assert_eq!(
@@ -384,7 +409,7 @@ fn single_cyclic_node() {
     let r = test_input(LabelledGraph::new(
         "single_cyclic_node",
         labels,
-        vec![edge(0, 0, "E", Style::None)],
+        vec![edge(0, 0, "E", Style::None, None)],
         None,
     ));
     assert_eq!(
@@ -404,10 +429,10 @@ fn hasse_diagram() {
         "hasse_diagram",
         labels,
         vec![
-            edge(0, 1, "", Style::None),
-            edge(0, 2, "", Style::None),
-            edge(1, 3, "", Style::None),
-            edge(2, 3, "", Style::None),
+            edge(0, 1, "", Style::None, Some("green")),
+            edge(0, 2, "", Style::None, Some("blue")),
+            edge(1, 3, "", Style::None, Some("red")),
+            edge(2, 3, "", Style::None, Some("black")),
         ],
         None,
     ));
@@ -418,10 +443,10 @@ fn hasse_diagram() {
     N1[label="{x}"];
     N2[label="{y}"];
     N3[label="{}"];
-    N0 -> N1[label=""];
-    N0 -> N2[label=""];
-    N1 -> N3[label=""];
-    N2 -> N3[label=""];
+    N0 -> N1[label=""][color="green"];
+    N0 -> N2[label=""][color="blue"];
+    N1 -> N3[label=""][color="red"];
+    N2 -> N3[label=""][color="black"];
 }
 "#
     );
@@ -442,10 +467,10 @@ fn left_aligned_text() {
         "syntax_tree",
         labels,
         vec![
-            edge(0, 1, "then", Style::None),
-            edge(0, 2, "else", Style::None),
-            edge(1, 3, ";", Style::None),
-            edge(2, 3, ";", Style::None),
+            edge(0, 1, "then", Style::None, None),
+            edge(0, 2, "else", Style::None, None),
+            edge(1, 3, ";", Style::None, None),
+            edge(2, 3, ";", Style::None, None),
         ],
     );
 

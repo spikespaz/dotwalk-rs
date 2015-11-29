@@ -493,6 +493,14 @@ pub trait Labeller<'a> {
         Style::None
     }
 
+    /// Maps `n` to one of the [graphviz `color` names][1]. If `None`
+    /// is returned, no `color` attribute is specified.
+    ///
+    /// [1]: https://graphviz.gitlab.io/_pages/doc/info/colors.html
+    fn node_color(&'a self, _node: &Self::Node) -> Option<LabelText<'a>> {
+        None
+    }
+
     /// Maps `e` to arrow style that will be used on the end of an edge.
     /// Defaults to generic arrow style.
     fn edge_end_arrow(&'a self, _e: &Self::Edge) -> Arrow {
@@ -508,6 +516,14 @@ pub trait Labeller<'a> {
     /// Maps `e` to a style that will be used in the rendered output.
     fn edge_style(&'a self, _e: &Self::Edge) -> Style {
         Style::None
+    }
+
+    /// Maps `e` to one of the [graphviz `color` names][1]. If `None`
+    /// is returned, no `color` attribute is specified.
+    ///
+    /// [1]: https://graphviz.gitlab.io/_pages/doc/info/colors.html
+    fn edge_color(&'a self, _e: &Self::Edge) -> Option<LabelText<'a>> {
+        None
     }
 
     /// The kind of graph, defaults to `Kind::Digraph`.
@@ -607,7 +623,9 @@ pub enum RenderOption {
     NoEdgeLabels,
     NoNodeLabels,
     NoEdgeStyles,
+    NoEdgeColors,
     NoNodeStyles,
+    NoNodeColors,
 
     Fontname(String),
     DarkTheme,
@@ -684,6 +702,12 @@ where
             write!(text, "[style=\"{}\"]", style.as_slice()).unwrap();
         }
 
+        if !options.contains(&RenderOption::NoNodeColors) {
+            if let Some(c) = g.node_color(n) {
+                write!(text, "[color={}]", c.to_dot_string()).unwrap();
+            }
+        }
+
         if let Some(s) = g.node_shape(n) {
             write!(text, "[shape={}]", &s.to_dot_string()).unwrap();
         }
@@ -721,6 +745,12 @@ where
         let style = g.edge_style(e);
         if !options.contains(&RenderOption::NoEdgeStyles) && style != Style::None {
             write!(text, "[style=\"{}\"]", style.as_slice()).unwrap();
+        }
+
+        if !options.contains(&RenderOption::NoEdgeColors) {
+            if let Some(c) = g.edge_color(e) {
+                write!(text, "[color={}]", c.to_dot_string()).unwrap();
+            }
         }
 
         if !options.contains(&RenderOption::NoArrows)
