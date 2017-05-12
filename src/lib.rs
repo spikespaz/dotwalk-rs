@@ -82,13 +82,11 @@
 //!     }
 //!
 //!     fn source(&self, e: &Ed) -> Nd {
-//!         let &(s, _) = e;
-//!         s
+//!         e.0
 //!     }
 //!
 //!     fn target(&self, e: &Ed) -> Nd {
-//!         let &(_, t) = e;
-//!         t
+//!         e.1
 //!     }
 //! }
 //!
@@ -190,6 +188,7 @@
 //! impl<'a> dot::GraphWalk<'a> for Graph {
 //!     type Node = Nd;
 //!     type Edge = Ed<'a>;
+//!
 //!     fn nodes(&self) -> dot::Nodes<'a, Nd> {
 //!         (0..self.nodes.len()).collect()
 //!     }
@@ -197,12 +196,10 @@
 //!         self.edges.iter().collect()
 //!     }
 //!     fn source(&self, e: &Ed<'_>) -> Nd {
-//!         let &&(s, _) = e;
-//!         s
+//!         e.0
 //!     }
 //!     fn target(&self, e: &Ed<'_>) -> Nd {
-//!         let &&(_, t) = e;
-//!         t
+//!         e.1
 //!     }
 //! }
 //!
@@ -280,12 +277,10 @@
 //!             .collect()
 //!     }
 //!     fn source(&self, e: &Ed<'a>) -> Nd<'a> {
-//!         let &(s, _) = e;
-//!         s
+//!         e.0
 //!     }
 //!     fn target(&self, e: &Ed<'a>) -> Nd<'a> {
-//!         let &(_, t) = e;
-//!         t
+//!         e.1
 //!     }
 //! }
 //!
