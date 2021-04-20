@@ -5,7 +5,7 @@ use NodeLabels::*;
 
 use super::LabelText::{self, EscStr, HtmlStr, LabelStr};
 use super::{render, Arrow, ArrowVertex, Edges, GraphWalk, Id, Labeller, Nodes, Side, Style};
-use crate::{GraphKind, RankDir};
+use crate::{GraphKind, RankDir, Subgraphs};
 
 /// each node is an index in a vector in the graph.
 type Node = usize;
@@ -144,6 +144,8 @@ fn id_name<'a>(n: &Node) -> Id<'a> {
 impl<'a> Labeller<'a> for LabelledGraph {
     type Node = Node;
     type Edge = &'a Edge;
+    type Subgraph = ();
+
     fn graph_id(&'a self) -> Id<'a> {
         Id::new(self.name).unwrap()
     }
@@ -180,6 +182,7 @@ impl<'a> Labeller<'a> for LabelledGraph {
 impl<'a> Labeller<'a> for LabelledGraphWithEscStrs {
     type Node = Node;
     type Edge = &'a Edge;
+    type Subgraph = ();
     fn graph_id(&'a self) -> Id<'a> {
         self.graph.graph_id()
     }
@@ -214,6 +217,8 @@ impl<'a> Labeller<'a> for LabelledGraphWithEscStrs {
 impl<'a> GraphWalk<'a> for LabelledGraph {
     type Node = Node;
     type Edge = &'a Edge;
+    type Subgraph = ();
+
     fn nodes(&'a self) -> Nodes<'a, Node> {
         (0..self.node_labels.len()).collect()
     }
@@ -231,6 +236,7 @@ impl<'a> GraphWalk<'a> for LabelledGraph {
 impl<'a> GraphWalk<'a> for LabelledGraphWithEscStrs {
     type Node = Node;
     type Edge = &'a Edge;
+    type Subgraph = ();
     fn nodes(&'a self) -> Nodes<'a, Node> {
         self.graph.nodes()
     }
@@ -517,25 +523,28 @@ type SimpleEdge = (Node, Node);
 struct DefaultStyleGraph {
     /// The name for this graph. Used for labelling generated graph
     name: &'static str,
+    kind: GraphKind,
     nodes: usize,
     edges: Vec<SimpleEdge>,
-    kind: GraphKind,
+    subgraphs: Vec<Vec<Node>>,
     rankdir: Option<RankDir>,
 }
 
 impl DefaultStyleGraph {
     fn new(
         name: &'static str,
+        kind: GraphKind,
         nodes: usize,
         edges: Vec<SimpleEdge>,
-        kind: GraphKind,
+        subgraphs: Vec<Vec<Node>>,
     ) -> DefaultStyleGraph {
         assert!(!name.is_empty());
         DefaultStyleGraph {
             name,
+            kind,
             nodes,
             edges,
-            kind,
+            subgraphs,
             rankdir: None,
         }
     }
@@ -548,6 +557,7 @@ impl DefaultStyleGraph {
 impl<'a> Labeller<'a> for DefaultStyleGraph {
     type Node = Node;
     type Edge = &'a SimpleEdge;
+    type Subgraph = usize;
 
     fn graph_id(&'a self) -> Id<'a> {
         Id::new(self.name).unwrap()
@@ -555,6 +565,11 @@ impl<'a> Labeller<'a> for DefaultStyleGraph {
     fn node_id(&'a self, n: &Node) -> Id<'a> {
         id_name(n)
     }
+
+    fn subgraph_id(&'a self, s: &usize) -> Option<Id<'a>> {
+        Id::new(format!("cluster_{}", s)).ok()
+    }
+
     fn kind(&self) -> GraphKind {
         self.kind
     }
@@ -567,6 +582,7 @@ impl<'a> Labeller<'a> for DefaultStyleGraph {
 impl<'a> GraphWalk<'a> for DefaultStyleGraph {
     type Node = Node;
     type Edge = &'a SimpleEdge;
+    type Subgraph = usize;
 
     fn nodes(&'a self) -> Nodes<'a, Node> {
         (0..self.nodes).collect()
@@ -579,6 +595,13 @@ impl<'a> GraphWalk<'a> for DefaultStyleGraph {
     }
     fn target(&'a self, edge: &&'a SimpleEdge) -> Node {
         edge.1
+    }
+
+    fn subgraphs(&'a self) -> Subgraphs<'a, usize> {
+        std::borrow::Cow::Owned((0..self.subgraphs.len()).collect::<Vec<_>>())
+    }
+    fn subgraph_nodes(&'a self, s: &usize) -> Nodes<'a, Node> {
+        std::borrow::Cow::Borrowed(&self.subgraphs[*s])
     }
 }
 
@@ -594,9 +617,10 @@ fn test_input_default(g: DefaultStyleGraph) -> io::Result<String> {
 fn default_style_graph() {
     let r = test_input_default(DefaultStyleGraph::new(
         "g",
+        GraphKind::Undirected,
         4,
         vec![(0, 1), (0, 2), (1, 3), (2, 3)],
-        GraphKind::Undirected,
+        Vec::new(),
     ));
     assert_eq!(
         r.unwrap(),
@@ -618,9 +642,10 @@ fn default_style_graph() {
 fn default_style_digraph() {
     let r = test_input_default(DefaultStyleGraph::new(
         "di",
+        GraphKind::Directed,
         4,
         vec![(0, 1), (0, 2), (1, 3), (2, 3)],
-        GraphKind::Directed,
+        Vec::new(),
     ));
     assert_eq!(
         r.unwrap(),
@@ -641,8 +666,14 @@ fn default_style_digraph() {
 #[test]
 fn digraph_with_rankdir() {
     let r = test_input_default(
-        DefaultStyleGraph::new("di", 4, vec![(0, 1), (0, 2)], GraphKind::Directed)
-            .with_rankdir(Some(RankDir::LeftRight)),
+        DefaultStyleGraph::new(
+            "di",
+            GraphKind::Directed,
+            4,
+            vec![(0, 1), (0, 2)],
+            Vec::new(),
+        )
+        .with_rankdir(Some(RankDir::LeftRight)),
     );
     assert_eq!(
         r.unwrap(),
@@ -654,6 +685,41 @@ fn digraph_with_rankdir() {
     N3[label="N3"];
     N0 -> N1[label=""];
     N0 -> N2[label=""];
+}
+"#
+    );
+}
+
+#[test]
+fn subgraph() {
+    let r = test_input_default(DefaultStyleGraph::new(
+        "di",
+        GraphKind::Directed,
+        4,
+        vec![(0, 1), (0, 2), (1, 3), (2, 3)],
+        vec![vec![0, 1], vec![2, 3]],
+    ));
+    assert_eq!(
+        r.unwrap(),
+        r#"digraph di {
+subgraph cluster_0 {
+    label="";
+    N0;
+    N1;
+}
+subgraph cluster_1 {
+    label="";
+    N2;
+    N3;
+}
+    N0[label="N0"];
+    N1[label="N1"];
+    N2[label="N2"];
+    N3[label="N3"];
+    N0 -> N1[label=""];
+    N0 -> N2[label=""];
+    N1 -> N3[label=""];
+    N2 -> N3[label=""];
 }
 "#
     );
