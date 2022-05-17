@@ -434,6 +434,24 @@ pub struct Id<'a> {
     name: Cow<'a, str>,
 }
 
+#[derive(Debug)]
+pub enum IdError {
+    EmptyName,
+    InvalidStartChar(char),
+    InvalidChar(char),
+}
+
+impl std::fmt::Display for IdError {
+    fn fmt(&self, f: &mut std::fmt::Formatter<'_>) -> std::fmt::Result {
+        match self {
+            IdError::EmptyName => write!(f, "Id cannot be empty"),
+            IdError::InvalidStartChar(c) => write!(f, "Id cannot begin with '{c}'"),
+            IdError::InvalidChar(c) => write!(f, "Id cannot contain '{c}'"),
+        }
+    }
+}
+impl std::error::Error for IdError {}
+
 impl<'a> Id<'a> {
     /// Creates an `Id` named `name`.
     ///
@@ -449,14 +467,18 @@ impl<'a> Id<'a> {
     ///
     /// Passing an invalid string (containing spaces, brackets,
     /// quotes, ...) will return an empty `Err` value.
-    pub fn new<Name: Into<Cow<'a, str>>>(name: Name) -> Result<Id<'a>, ()> {
+    pub fn new<Name: Into<Cow<'a, str>>>(name: Name) -> Result<Id<'a>, IdError> {
         let name = name.into();
         match name.chars().next() {
             Some(c) if c.is_ascii_alphabetic() || c == '_' => {}
-            _ => return Err(()),
+            Some(c) => return Err(IdError::InvalidStartChar(c)),
+            None => return Err(IdError::EmptyName),
         }
-        if !name.chars().all(|c| c.is_ascii_alphanumeric() || c == '_') {
-            return Err(());
+        if let Some(c) = name
+            .chars()
+            .find(|c| !(c.is_ascii_alphanumeric() || *c == '_'))
+        {
+            return Err(IdError::InvalidChar(c));
         }
 
         Ok(Id { name })
@@ -989,24 +1011,10 @@ impl Default for Arrow {
     }
 }
 
-impl From<[ArrowVertex; 2]> for Arrow {
-    fn from(val: [ArrowVertex; 2]) -> Self {
+impl<const N: usize> From<[ArrowVertex; N]> for Arrow {
+    fn from(shape: [ArrowVertex; N]) -> Arrow {
         Arrow {
-            arrows: vec![val[0], val[1]],
-        }
-    }
-}
-impl From<[ArrowVertex; 3]> for Arrow {
-    fn from(val: [ArrowVertex; 3]) -> Self {
-        Arrow {
-            arrows: vec![val[0], val[1], val[2]],
-        }
-    }
-}
-impl From<[ArrowVertex; 4]> for Arrow {
-    fn from(val: [ArrowVertex; 4]) -> Self {
-        Arrow {
-            arrows: vec![val[0], val[1], val[2], val[3]],
+            arrows: shape.to_vec(),
         }
     }
 }
