@@ -308,6 +308,7 @@
 // tidy-alphabetical-end
 
 use std::borrow::Cow;
+use std::collections::HashMap;
 use std::io;
 use std::io::prelude::*;
 
@@ -529,6 +530,11 @@ pub trait Labeller<'a> {
         None
     }
 
+    /// Maps `n` to a set of arbritrary node attributes.
+    fn node_attrs(&'a self, _n: &Self::Node) -> HashMap<&str, &str> {
+        HashMap::default()
+    }
+
     /// Maps `e` to arrow style that will be used on the end of an edge.
     /// Defaults to generic arrow style.
     fn edge_end_arrow(&'a self, _e: &Self::Edge) -> Arrow {
@@ -552,6 +558,11 @@ pub trait Labeller<'a> {
     /// [1]: https://graphviz.gitlab.io/_pages/doc/info/colors.html
     fn edge_color(&'a self, _e: &Self::Edge) -> Option<LabelText<'a>> {
         None
+    }
+
+    /// Maps `e` to a set of arbritrary edge attributes.
+    fn edge_attrs(&'a self, _e: &Self::Edge) -> HashMap<&str, &str> {
+        HashMap::default()
     }
 
     /// The kind of graph, defaults to `Kind::Digraph`.
@@ -746,6 +757,10 @@ where
             write!(text, "[shape={}]", &s.to_dot_string()).unwrap();
         }
 
+        for (name, value) in g.node_attrs(n).into_iter() {
+            write!(text, "[{name}={value}]").unwrap()
+        }
+
         writeln!(text, ";").unwrap();
         w.write_all(&text)?;
 
@@ -806,6 +821,10 @@ where
                 .unwrap();
             }
             write!(text, "]").unwrap();
+        }
+
+        for (name, value) in g.edge_attrs(e).into_iter() {
+            write!(text, "{name}={value}").unwrap();
         }
 
         writeln!(text, ";").unwrap();
