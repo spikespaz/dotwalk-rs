@@ -570,9 +570,49 @@ pub trait Labeller<'a> {
         HashMap::default()
     }
 
+    /// Maps `e` to the compass point that the edge will start from.
+    /// Defaults to the default point
+    fn edge_start_point(&'a self, _e: &Self::Edge) -> Option<CompassPoint> {
+        None
+    }
+
+    /// Maps `e` to the compass point that the edge will end at.
+    /// Defaults to the default point
+    fn edge_end_point(&'a self, _e: &Self::Edge) -> Option<CompassPoint> {
+        None
+    }
+
     /// The kind of graph, defaults to `Kind::Digraph`.
     fn kind(&self) -> GraphKind {
         GraphKind::Directed
+    }
+}
+
+/// <https://graphviz.org/docs/attr-types/portPos/>
+pub enum CompassPoint {
+    North,
+    NorthEast,
+    East,
+    SouthEast,
+    South,
+    SouthWest,
+    West,
+    NorthWest,
+}
+
+impl CompassPoint {
+    const fn to_code(&self) -> &'static str {
+        use CompassPoint::*;
+        match self {
+            North => ":n",
+            NorthEast => ":ne",
+            East => ":e",
+            SouthEast => ":se",
+            South => ":s",
+            SouthWest => ":sw",
+            West => ":w",
+            NorthWest => ":nw",
+        }
     }
 }
 
@@ -780,6 +820,8 @@ where
         let escaped_label = &g.edge_label(e).to_dot_string();
         let start_arrow = g.edge_start_arrow(e);
         let end_arrow = g.edge_end_arrow(e);
+        let start_point = g.edge_start_point(e).map(|p| p.to_code()).unwrap_or("");
+        let end_point = g.edge_end_point(e).map(|p| p.to_code()).unwrap_or("");
 
         write!(w, "    ")?;
         let source = g.source(e);
@@ -789,10 +831,12 @@ where
 
         write!(
             text,
-            "{} {} {}",
+            "{}{} {} {}{}",
             source_id.as_slice(),
+            start_point,
             g.kind().edge_op(),
-            target_id.as_slice()
+            target_id.as_slice(),
+            end_point,
         )
         .unwrap();
 
