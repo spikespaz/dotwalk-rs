@@ -483,6 +483,11 @@ pub trait Labeller<'a> {
     /// Must return a DOT compatible identifier naming the graph.
     fn graph_id(&'a self) -> Id<'a>;
 
+    /// A list of attributes to apply to the graph
+    fn graph_attrs(&'a self) -> HashMap<&str, &str> {
+        HashMap::default()
+    }
+
     /// Maps `n` to a unique identifier with respect to `self`. The
     /// implementor is responsible for ensuring that the returned name
     /// is a valid DOT identifier.
@@ -698,6 +703,10 @@ where
         if let Some(rankdir) = g.rank_dir() {
             writeln!(w, "    rankdir=\"{}\";", rankdir.as_slice())?;
         }
+    }
+
+    for (name, value) in g.graph_attrs().iter() {
+        writeln!(w, "    {name}={value}").unwrap();
     }
 
     // Global graph properties
