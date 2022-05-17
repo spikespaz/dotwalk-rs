@@ -582,6 +582,16 @@ pub trait Labeller<'a> {
         None
     }
 
+    /// Maps `e` to the port that the edge will start from.
+    fn edge_start_port(&'a self, _: &Self::Edge) -> Option<Id<'a>> {
+        None
+    }
+
+    /// Maps `e` to the port that the edge will end at.
+    fn edge_end_port(&'a self, _: &Self::Edge) -> Option<Id<'a>> {
+        None
+    }
+
     /// The kind of graph, defaults to `Kind::Digraph`.
     fn kind(&self) -> GraphKind {
         GraphKind::Directed
@@ -598,6 +608,7 @@ pub enum CompassPoint {
     SouthWest,
     West,
     NorthWest,
+    Center,
 }
 
 impl CompassPoint {
@@ -612,6 +623,7 @@ impl CompassPoint {
             SouthWest => ":sw",
             West => ":w",
             NorthWest => ":nw",
+            Center => ":c",
         }
     }
 }
@@ -820,6 +832,14 @@ where
         let escaped_label = &g.edge_label(e).to_dot_string();
         let start_arrow = g.edge_start_arrow(e);
         let end_arrow = g.edge_end_arrow(e);
+        let start_port = g
+            .edge_start_port(e)
+            .map(|p| format!(":{}", p.name))
+            .unwrap_or_default();
+        let end_port = g
+            .edge_end_port(e)
+            .map(|p| format!(":{}", p.name))
+            .unwrap_or_default();
         let start_point = g.edge_start_point(e).map(|p| p.to_code()).unwrap_or("");
         let end_point = g.edge_end_point(e).map(|p| p.to_code()).unwrap_or("");
 
@@ -831,11 +851,13 @@ where
 
         write!(
             text,
-            "{}{} {} {}{}",
+            "{}{}{} {} {}{}{}",
             source_id.as_slice(),
+            start_port,
             start_point,
             g.kind().edge_op(),
             target_id.as_slice(),
+            end_port,
             end_point,
         )
         .unwrap();
