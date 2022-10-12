@@ -5,7 +5,7 @@ use NodeLabels::*;
 
 use super::LabelText::{self, EscStr, HtmlStr, LabelStr};
 use super::{render, Arrow, ArrowVertex, Edges, GraphWalk, Id, Labeller, Nodes, Side, Style};
-use crate::GraphKind;
+use crate::{GraphKind, RankDir};
 
 /// each node is an index in a vector in the graph.
 type Node = usize;
@@ -520,6 +520,7 @@ struct DefaultStyleGraph {
     nodes: usize,
     edges: Vec<SimpleEdge>,
     kind: GraphKind,
+    rankdir: Option<RankDir>,
 }
 
 impl DefaultStyleGraph {
@@ -535,7 +536,12 @@ impl DefaultStyleGraph {
             nodes,
             edges,
             kind,
+            rankdir: None,
         }
+    }
+
+    fn with_rankdir(self, rankdir: Option<RankDir>) -> Self {
+        Self { rankdir, ..self }
     }
 }
 
@@ -551,6 +557,10 @@ impl<'a> Labeller<'a> for DefaultStyleGraph {
     }
     fn kind(&self) -> GraphKind {
         self.kind
+    }
+
+    fn rank_dir(&self) -> Option<RankDir> {
+        self.rankdir
     }
 }
 
@@ -623,6 +633,27 @@ fn default_style_digraph() {
     N0 -> N2[label=""];
     N1 -> N3[label=""];
     N2 -> N3[label=""];
+}
+"#
+    );
+}
+
+#[test]
+fn digraph_with_rankdir() {
+    let r = test_input_default(
+        DefaultStyleGraph::new("di", 4, vec![(0, 1), (0, 2)], GraphKind::Directed)
+            .with_rankdir(Some(RankDir::LeftRight)),
+    );
+    assert_eq!(
+        r.unwrap(),
+        r#"digraph di {
+    rankdir="LR";
+    N0[label="N0"];
+    N1[label="N1"];
+    N2[label="N2"];
+    N3[label="N3"];
+    N0 -> N1[label=""];
+    N0 -> N2[label=""];
 }
 "#
     );
