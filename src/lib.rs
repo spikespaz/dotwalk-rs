@@ -375,6 +375,27 @@ impl Style {
     }
 }
 
+/// The direction to draw directed graphs (one rank at a time)
+/// See https://graphviz.org/docs/attr-types/rankdir/ for descriptions
+#[derive(Copy, Clone, PartialEq, Eq, Debug)]
+pub enum RankDir {
+    TopBottom,
+    LeftRight,
+    BottomTop,
+    RightLeft,
+}
+
+impl RankDir {
+    pub fn as_slice(self) -> &'static str {
+        match self {
+            RankDir::TopBottom => "TB",
+            RankDir::LeftRight => "LR",
+            RankDir::BottomTop => "BT",
+            RankDir::RightLeft => "RL",
+        }
+    }
+}
+
 // There is a tension in the design of the labelling API.
 //
 // For example, I considered making a `Labeller<T>` trait that
@@ -491,6 +512,13 @@ pub trait Labeller<'a> {
     /// Maps `n` to a style that will be used in the rendered output.
     fn node_style(&'a self, _n: &Self::Node) -> Style {
         Style::None
+    }
+
+    /// Return an explicit rank dir to use for directed graphs.
+    ///
+    /// Return 'None' to use the default (generally "TB" for directed graphs).
+    fn rank_dir(&'a self) -> Option<RankDir> {
+        None
     }
 
     /// Maps `n` to one of the [graphviz `color` names][1]. If `None`
@@ -654,6 +682,12 @@ where
     W: Write,
 {
     writeln!(w, "{} {} {{", g.kind().keyword(), g.graph_id().as_slice())?;
+
+    if g.kind() == GraphKind::Directed {
+        if let Some(rankdir) = g.rank_dir() {
+            writeln!(w, "    rankdir=\"{}\";", rankdir.as_slice())?;
+        }
+    }
 
     // Global graph properties
     let mut graph_attrs = Vec::new();
