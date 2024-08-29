@@ -1,0 +1,17 @@
+Copyright (c) 2014 Felix Stanley Klock II
+Copyright (c) 2014-2024 The Rust Project Developers
+Copyright (c) 2024 Jacob Birkett
+
+Dotwalk is based on a partial source tree of the Rust Project, and is therefore
+dual-licensed under MIT and Apache 2.0 terms.
+
+This `COPYRIGHT` file, `LICENSE-APACHE`, and `LICENSE-MIT` are to be treated the
+same -- in all applicable respects -- as their counterparts in the Rust Project
+source tree, and should be distributed with their associated source code.
+
+Also see: <https://github.com/rust-lang/rust/blob/master/COPYRIGHT>.
+
+Copyrights in the Rust Project are retained by their contributors.
+
+The original implementation of `libgraphviz` was authored by
+Felix Stanley Klock II in 2014.
