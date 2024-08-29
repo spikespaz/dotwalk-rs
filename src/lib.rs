@@ -35,11 +35,9 @@
 //! which is cyclic.
 //!
 //! ```rust
-//! #![feature(rustc_private)]
-//!
 //! use std::io::Write;
 //!
-//! use rustc_graphviz as dot;
+//! use dotwalk as dot;
 //!
 //! type Nd = isize;
 //! type Ed = (isize, isize);
@@ -150,11 +148,9 @@
 //! entity `&sube`).
 //!
 //! ```rust
-//! #![feature(rustc_private)]
-//!
 //! use std::io::Write;
 //!
-//! use rustc_graphviz as dot;
+//! use dotwalk as dot;
 //!
 //! type Nd = usize;
 //! type Ed<'a> = &'a (usize, usize);
@@ -231,11 +227,9 @@
 //! Hasse-diagram for the subsets of the set `{x, y}`.
 //!
 //! ```rust
-//! #![feature(rustc_private)]
-//!
 //! use std::io::Write;
 //!
-//! use rustc_graphviz as dot;
+//! use dotwalk as dot;
 //!
 //! type Nd<'a> = (usize, &'a str);
 //! type Ed<'a> = (Nd<'a>, Nd<'a>);
