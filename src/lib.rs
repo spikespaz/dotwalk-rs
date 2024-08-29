@@ -38,21 +38,24 @@
 //! #![feature(rustc_private)]
 //!
 //! use std::io::Write;
+//!
 //! use rustc_graphviz as dot;
 //!
 //! type Nd = isize;
-//! type Ed = (isize,isize);
+//! type Ed = (isize, isize);
 //! struct Edges(Vec<Ed>);
 //!
 //! pub fn render_to<W: Write>(output: &mut W) {
-//!     let edges = Edges(vec![(0,1), (0,2), (1,3), (2,3), (3,4), (4,4)]);
+//!     let edges = Edges(vec![(0, 1), (0, 2), (1, 3), (2, 3), (3, 4), (4, 4)]);
 //!     dot::render(&edges, output).unwrap()
 //! }
 //!
 //! impl<'a> dot::Labeller<'a> for Edges {
 //!     type Node = Nd;
 //!     type Edge = Ed;
-//!     fn graph_id(&'a self) -> dot::Id<'a> { dot::Id::new("example1").unwrap() }
+//!     fn graph_id(&'a self) -> dot::Id<'a> {
+//!         dot::Id::new("example1").unwrap()
+//!     }
 //!
 //!     fn node_id(&'a self, n: &Nd) -> dot::Id<'a> {
 //!         dot::Id::new(format!("N{}", *n)).unwrap()
@@ -62,26 +65,33 @@
 //! impl<'a> dot::GraphWalk<'a> for Edges {
 //!     type Node = Nd;
 //!     type Edge = Ed;
-//!     fn nodes(&self) -> dot::Nodes<'a,Nd> {
+//!     fn nodes(&self) -> dot::Nodes<'a, Nd> {
 //!         // (assumes that |N| \approxeq |E|)
 //!         let &Edges(ref v) = self;
 //!         let mut nodes = Vec::with_capacity(v.len());
-//!         for &(s,t) in v {
-//!             nodes.push(s); nodes.push(t);
+//!         for &(s, t) in v {
+//!             nodes.push(s);
+//!             nodes.push(t);
 //!         }
 //!         nodes.sort();
 //!         nodes.dedup();
 //!         nodes.into()
 //!     }
 //!
-//!     fn edges(&'a self) -> dot::Edges<'a,Ed> {
+//!     fn edges(&'a self) -> dot::Edges<'a, Ed> {
 //!         let &Edges(ref edges) = self;
 //!         (&edges[..]).into()
 //!     }
 //!
-//!     fn source(&self, e: &Ed) -> Nd { let &(s,_) = e; s }
+//!     fn source(&self, e: &Ed) -> Nd {
+//!         let &(s, _) = e;
+//!         s
+//!     }
 //!
-//!     fn target(&self, e: &Ed) -> Nd { let &(_,t) = e; t }
+//!     fn target(&self, e: &Ed) -> Nd {
+//!         let &(_, t) = e;
+//!         t
+//!     }
 //! }
 //!
 //! # pub fn main() { render_to(&mut Vec::new()) }
@@ -143,16 +153,23 @@
 //! #![feature(rustc_private)]
 //!
 //! use std::io::Write;
+//!
 //! use rustc_graphviz as dot;
 //!
 //! type Nd = usize;
 //! type Ed<'a> = &'a (usize, usize);
-//! struct Graph { nodes: Vec<&'static str>, edges: Vec<(usize,usize)> }
+//! struct Graph {
+//!     nodes: Vec<&'static str>,
+//!     edges: Vec<(usize, usize)>,
+//! }
 //!
 //! pub fn render_to<W: Write>(output: &mut W) {
-//!     let nodes = vec!["{x,y}","{x}","{y}","{}"];
-//!     let edges = vec![(0,1), (0,2), (1,3), (2,3)];
-//!     let graph = Graph { nodes: nodes, edges: edges };
+//!     let nodes = vec!["{x,y}", "{x}", "{y}", "{}"];
+//!     let edges = vec![(0, 1), (0, 2), (1, 3), (2, 3)];
+//!     let graph = Graph {
+//!         nodes: nodes,
+//!         edges: edges,
+//!     };
 //!
 //!     dot::render(&graph, output).unwrap()
 //! }
@@ -160,7 +177,9 @@
 //! impl<'a> dot::Labeller<'a> for Graph {
 //!     type Node = Nd;
 //!     type Edge = Ed<'a>;
-//!     fn graph_id(&'a self) -> dot::Id<'a> { dot::Id::new("example2").unwrap() }
+//!     fn graph_id(&'a self) -> dot::Id<'a> {
+//!         dot::Id::new("example2").unwrap()
+//!     }
 //!     fn node_id(&'a self, n: &Nd) -> dot::Id<'a> {
 //!         dot::Id::new(format!("N{}", n)).unwrap()
 //!     }
@@ -175,10 +194,20 @@
 //! impl<'a> dot::GraphWalk<'a> for Graph {
 //!     type Node = Nd;
 //!     type Edge = Ed<'a>;
-//!     fn nodes(&self) -> dot::Nodes<'a,Nd> { (0..self.nodes.len()).collect() }
-//!     fn edges(&'a self) -> dot::Edges<'a,Ed<'a>> { self.edges.iter().collect() }
-//!     fn source(&self, e: &Ed<'_>) -> Nd { let & &(s,_) = e; s }
-//!     fn target(&self, e: &Ed<'_>) -> Nd { let & &(_,t) = e; t }
+//!     fn nodes(&self) -> dot::Nodes<'a, Nd> {
+//!         (0..self.nodes.len()).collect()
+//!     }
+//!     fn edges(&'a self) -> dot::Edges<'a, Ed<'a>> {
+//!         self.edges.iter().collect()
+//!     }
+//!     fn source(&self, e: &Ed<'_>) -> Nd {
+//!         let &&(s, _) = e;
+//!         s
+//!     }
+//!     fn target(&self, e: &Ed<'_>) -> Nd {
+//!         let &&(_, t) = e;
+//!         t
+//!     }
 //! }
 //!
 //! # pub fn main() { render_to(&mut Vec::new()) }
@@ -205,16 +234,23 @@
 //! #![feature(rustc_private)]
 //!
 //! use std::io::Write;
+//!
 //! use rustc_graphviz as dot;
 //!
 //! type Nd<'a> = (usize, &'a str);
 //! type Ed<'a> = (Nd<'a>, Nd<'a>);
-//! struct Graph { nodes: Vec<&'static str>, edges: Vec<(usize,usize)> }
+//! struct Graph {
+//!     nodes: Vec<&'static str>,
+//!     edges: Vec<(usize, usize)>,
+//! }
 //!
 //! pub fn render_to<W: Write>(output: &mut W) {
-//!     let nodes = vec!["{x,y}","{x}","{y}","{}"];
-//!     let edges = vec![(0,1), (0,2), (1,3), (2,3)];
-//!     let graph = Graph { nodes: nodes, edges: edges };
+//!     let nodes = vec!["{x,y}", "{x}", "{y}", "{}"];
+//!     let edges = vec![(0, 1), (0, 2), (1, 3), (2, 3)];
+//!     let graph = Graph {
+//!         nodes: nodes,
+//!         edges: edges,
+//!     };
 //!
 //!     dot::render(&graph, output).unwrap()
 //! }
@@ -222,7 +258,9 @@
 //! impl<'a> dot::Labeller<'a> for Graph {
 //!     type Node = Nd<'a>;
 //!     type Edge = Ed<'a>;
-//!     fn graph_id(&'a self) -> dot::Id<'a> { dot::Id::new("example3").unwrap() }
+//!     fn graph_id(&'a self) -> dot::Id<'a> {
+//!         dot::Id::new("example3").unwrap()
+//!     }
 //!     fn node_id(&'a self, n: &Nd<'a>) -> dot::Id<'a> {
 //!         dot::Id::new(format!("N{}", n.0)).unwrap()
 //!     }
@@ -238,17 +276,23 @@
 //! impl<'a> dot::GraphWalk<'a> for Graph {
 //!     type Node = Nd<'a>;
 //!     type Edge = Ed<'a>;
-//!     fn nodes(&'a self) -> dot::Nodes<'a,Nd<'a>> {
+//!     fn nodes(&'a self) -> dot::Nodes<'a, Nd<'a>> {
 //!         self.nodes.iter().map(|s| &s[..]).enumerate().collect()
 //!     }
-//!     fn edges(&'a self) -> dot::Edges<'a,Ed<'a>> {
-//!         self.edges.iter()
-//!             .map(|&(i,j)|((i, &self.nodes[i][..]),
-//!                           (j, &self.nodes[j][..])))
+//!     fn edges(&'a self) -> dot::Edges<'a, Ed<'a>> {
+//!         self.edges
+//!             .iter()
+//!             .map(|&(i, j)| ((i, &self.nodes[i][..]), (j, &self.nodes[j][..])))
 //!             .collect()
 //!     }
-//!     fn source(&self, e: &Ed<'a>) -> Nd<'a> { let &(s,_) = e; s }
-//!     fn target(&self, e: &Ed<'a>) -> Nd<'a> { let &(_,t) = e; t }
+//!     fn source(&self, e: &Ed<'a>) -> Nd<'a> {
+//!         let &(s, _) = e;
+//!         s
+//!     }
+//!     fn target(&self, e: &Ed<'a>) -> Nd<'a> {
+//!         let &(_, t) = e;
+//!         t
+//!     }
 //! }
 //!
 //! # pub fn main() { render_to(&mut Vec::new()) }
@@ -270,13 +314,7 @@
 //! * [DOT language](https://www.graphviz.org/doc/info/lang.html)
 
 // tidy-alphabetical-start
-#![allow(internal_features)]
-#![doc(
-    html_root_url = "https://doc.rust-lang.org/nightly/nightly-rustc/",
-    test(attr(allow(unused_variables), deny(warnings)))
-)]
-#![doc(rust_logo)]
-#![feature(rustdoc_internals)]
+#![doc(test(attr(allow(unused_variables), deny(warnings))))]
 #![warn(unreachable_pub)]
 // tidy-alphabetical-end
 
@@ -596,9 +634,14 @@ where
     let mut graph_attrs = Vec::new();
     let mut content_attrs = Vec::new();
     let font;
-    if let Some(fontname) = options.iter().find_map(|option| {
-        if let RenderOption::Fontname(fontname) = option { Some(fontname) } else { None }
-    }) {
+    let fontname = options.iter().find_map(|option| {
+        if let RenderOption::Fontname(fontname) = option {
+            Some(fontname)
+        } else {
+            None
+        }
+    });
+    if let Some(fontname) = fontname {
         font = format!(r#"fontname="{fontname}""#);
         graph_attrs.push(&font[..]);
         content_attrs.push(&font[..]);
