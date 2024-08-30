@@ -10,8 +10,19 @@ language ([reference](1)) files for graphs to be rendered by another tool.
 
 This crate is extracted from the Rust compiler source tree.
 It is based on [`compiler/rustc_graphviz`] at commit [`fa18140`].
-The crate has been renamed and moved from [`src/librustc_graphviz`] and previously [`src/libgraphviz`].
-All commit history for relevant files is preserved in this repository.
+The crate has been renamed and moved from [`src/librustc_graphviz`] and
+previously [`src/libgraphviz`].
+
+In addition to its origin as an internal crate, others have extracted forks of
+their own, as a matter of course. Among them are [`dot`] which has a messy
+history and appears to have changed hands a few times, and [`dot2-rs`].
+
+This project's history contains all known commits to each file, from the
+original and cherry-picked contributions to derivative sources. Delicate care
+has been taken to preserve each commit's original author.
+
+[`dot`]: https://github.com/przygienda/dot-rust
+[`dot2-rs`]: https://github.com/sanpii/dot2.rs
 
 You can create your own filtered repository from newer Rust source by running these commands:
 ```sh
