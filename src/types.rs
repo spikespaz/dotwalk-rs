@@ -104,6 +104,14 @@ pub struct Id<'a> {
     pub(crate) name: Cow<'a, str>,
 }
 
+impl<'a> std::ops::Deref for Id<'a> {
+    type Target = Cow<'a, str>;
+
+    fn deref(&self) -> &Self::Target {
+        &self.name
+    }
+}
+
 impl<'a> Id<'a> {
     /// Creates an `Id` named `name`.
     ///
@@ -134,10 +142,6 @@ impl<'a> Id<'a> {
         }
 
         Ok(Id { name })
-    }
-
-    pub fn as_slice(&'a self) -> &'a str {
-        &self.name
     }
 }
 

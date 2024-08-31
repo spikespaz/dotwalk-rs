@@ -46,12 +46,7 @@ where
         + GraphWalk<'a, Node = N, Edge = E, Subgraph = S>,
     W: Write,
 {
-    writeln!(
-        w,
-        "{} {} {{",
-        g.kind().as_keyword(),
-        g.graph_id().as_slice()
-    )?;
+    writeln!(w, "{} {} {{", g.kind().as_keyword(), *g.graph_id())?;
 
     if g.kind() == GraphKind::Directed {
         if let Some(rankdir) = g.rank_dir() {
@@ -115,7 +110,7 @@ where
 {
     let mut text = Vec::new();
     for n in nodes.iter() {
-        write!(text, "    {}", graph.node_id(n).as_slice()).unwrap();
+        write!(text, "    {}", *graph.node_id(n)).unwrap();
 
         if !options.contains(&RenderOption::NoNodeLabels) {
             let label = &graph.node_label(n).to_escaped_string();
@@ -168,7 +163,7 @@ where
         write!(text, "subgraph").unwrap();
 
         if let Some(id) = graph.subgraph_id(s) {
-            write!(text, " {}", id.as_slice()).unwrap();
+            write!(text, " {}", *id).unwrap();
         }
 
         writeln!(text, " {{").unwrap();
@@ -199,7 +194,7 @@ where
         }
 
         for n in graph.subgraph_nodes(s).iter() {
-            writeln!(text, "    {};", graph.node_id(n).as_slice()).unwrap();
+            writeln!(text, "    {};", *graph.node_id(n)).unwrap();
         }
 
         writeln!(text, "}}").unwrap();
@@ -246,19 +241,18 @@ where
             .unwrap_or("");
 
         write!(w, "    ")?;
-        let source = graph.source(e);
-        let target = graph.target(e);
-        let source_id = graph.node_id(&source);
-        let target_id = graph.node_id(&target);
+
+        let source_id = graph.node_id(&graph.source(e));
+        let target_id = graph.node_id(&graph.target(e));
 
         write!(
             text,
             "{}{}{} {} {}{}{}",
-            source_id.as_slice(),
+            *source_id,
             start_port,
             start_point,
             graph.kind().as_edge_op(),
-            target_id.as_slice(),
+            *target_id,
             end_port,
             end_point,
         )
