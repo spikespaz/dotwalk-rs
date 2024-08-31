@@ -286,7 +286,7 @@ impl Side {
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub enum ArrowVertex {
     /// No arrow will be displayed
-    NoArrow,
+    None,
     /// Arrow that ends in a triangle. Basically a normal arrow.
     /// NOTE: there is error in official documentation, this supports both fill and side clipping
     Normal(Fill, Side),
@@ -313,7 +313,7 @@ pub enum ArrowVertex {
 impl ArrowVertex {
     /// Constructor which returns no arrow.
     pub fn none() -> ArrowVertex {
-        ArrowVertex::NoArrow
+        ArrowVertex::None
     }
 
     /// Constructor which returns normal arrow.
@@ -389,10 +389,10 @@ impl ArrowVertex {
                     Side::Both => {}
                 }
             }
-            Self::NoArrow => {}
+            Self::None => {}
         };
         match *self {
-            Self::NoArrow => res.push_str("none"),
+            Self::None => res.push_str("none"),
             Self::Normal(_, _) => res.push_str("normal"),
             Self::Box(_, _) => res.push_str("box"),
             Self::Crow(_) => res.push_str("crow"),
@@ -426,7 +426,7 @@ impl Arrow {
     /// Arrow constructor which returns an empty arrow
     pub fn none() -> Arrow {
         Arrow {
-            arrows: vec![ArrowVertex::NoArrow],
+            arrows: vec![ArrowVertex::None],
         }
     }
 
@@ -434,13 +434,6 @@ impl Arrow {
     pub fn normal() -> Arrow {
         Arrow {
             arrows: vec![ArrowVertex::normal()],
-        }
-    }
-
-    /// Arrow constructor which returns an arrow created by a given ArrowShape.
-    pub fn from_arrow(arrow: ArrowVertex) -> Arrow {
-        Arrow {
-            arrows: vec![arrow],
         }
     }
 
@@ -458,6 +451,14 @@ impl Default for Arrow {
     /// Arrow constructor which returns a default arrow
     fn default() -> Arrow {
         Arrow { arrows: vec![] }
+    }
+}
+
+impl From<ArrowVertex> for Arrow {
+    fn from(vertex: ArrowVertex) -> Self {
+        Arrow {
+            arrows: vec![vertex],
+        }
     }
 }
 

@@ -347,7 +347,7 @@ fn test_some_arrow() {
     let labels: Trivial = SomeNodesLabelled(vec![Some("A"), None]);
     let styles = Some(vec![Style::None, Style::Dotted]);
     let start = Arrow::default();
-    let end = Arrow::from_arrow(ArrowVertex::crow());
+    let end = Arrow::from(ArrowVertex::crow());
     let result = test_input(LabelledGraph::new(
         "test_some_labelled",
         labels,
@@ -369,8 +369,8 @@ fn test_some_arrow() {
 fn test_some_arrows() {
     let labels: Trivial = SomeNodesLabelled(vec![Some("A"), None]);
     let styles = Some(vec![Style::None, Style::Dotted]);
-    let start = Arrow::from_arrow(ArrowVertex::tee());
-    let end = Arrow::from_arrow(ArrowVertex::Crow(Side::Left));
+    let start = Arrow::from(ArrowVertex::tee());
+    let end = Arrow::from(ArrowVertex::Crow(Side::Left));
     let result = test_input(LabelledGraph::new(
         "test_some_labelled",
         labels,
