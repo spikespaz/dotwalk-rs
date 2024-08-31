@@ -3,5 +3,30 @@ name = "dotwalk"
 description = "Traits to traverse structures and generate DOT graphs"
 version = "0.1.0"
 edition = "2021"
+authors = [
+    "Jacob Birkett <jacob@birkett.dev>",
+    "The Rust Project Developers",
+    "Felix S. Klock II <pnkfelix@pnkfx.org>",
+]
+documentation = "https://docs.rs/dotwalk"
+homepage = "https://github.com/spikespaz/dotwalk-rs"
+repository = "https://github.com/spikespaz/dotwalk-rs"
+license = "MIT OR Apache-2.0"
+keywords = [
+    "graph",
+    "graphviz",
+    "render-graph",
+    "data",
+    "dot",
+    "language",
+    "graph-algorithms",
+]
+categories = [
+    "visualization",
+    "algorithms",
+    "data-structures",
+    "development-tools",
+    "encoding",
+]
 
 [dependencies]
