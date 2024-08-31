@@ -435,8 +435,6 @@ use std::collections::HashMap;
 use std::io;
 use std::io::prelude::*;
 
-use LabelText::*;
-
 /// The text for a graphviz label on a node or edge.
 pub enum LabelText<'a> {
     /// This kind of label preserves the text directly as is.
@@ -651,14 +649,14 @@ pub trait Labeller<'a> {
     /// The label need not be unique, and may be the empty string; the
     /// default is just the output from `node_id`.
     fn node_label(&'a self, n: &Self::Node) -> LabelText<'a> {
-        LabelStr(self.node_id(n).name)
+        LabelText::LabelStr(self.node_id(n).name)
     }
 
     /// Maps `e` to a label that will be used in the rendered output.
     /// The label need not be unique, and may be the empty string; the
     /// default is in fact the empty string.
     fn edge_label(&'a self, _e: &Self::Edge) -> LabelText<'a> {
-        LabelStr("".into())
+        LabelText::LabelStr("".into())
     }
 
     /// Maps `n` to a style that will be used in the rendered output.
@@ -751,7 +749,7 @@ pub trait Labeller<'a> {
 
     /// Maps `s` to the corresponding subgraph label.
     fn subgraph_label(&'a self, _s: &Self::Subgraph) -> LabelText<'a> {
-        LabelStr("".into())
+        LabelText::LabelStr("".into())
     }
 
     /// Maps `s` to the corresponding subgraph style (default to `Style::None`).
@@ -792,17 +790,17 @@ pub enum CompassPoint {
 
 impl CompassPoint {
     const fn to_code(&self) -> &'static str {
-        use CompassPoint::*;
+        use CompassPoint as C;
         match self {
-            North => ":n",
-            NorthEast => ":ne",
-            East => ":e",
-            SouthEast => ":se",
-            South => ":s",
-            SouthWest => ":sw",
-            West => ":w",
-            NorthWest => ":nw",
-            Center => ":c",
+            C::North => ":n",
+            C::NorthEast => ":ne",
+            C::East => ":e",
+            C::SouthEast => ":se",
+            C::South => ":s",
+            C::SouthWest => ":sw",
+            C::West => ":w",
+            C::NorthWest => ":nw",
+            C::Center => ":c",
         }
     }
 }
@@ -818,12 +816,12 @@ pub fn escape_html(s: &str) -> String {
 }
 
 impl<'a> LabelText<'a> {
-    pub fn label<S: Into<Cow<'a, str>>>(s: S) -> LabelText<'a> {
-        LabelStr(s.into())
+    pub fn label<S: Into<Cow<'a, str>>>(s: S) -> Self {
+        Self::LabelStr(s.into())
     }
 
-    pub fn html<S: Into<Cow<'a, str>>>(s: S) -> LabelText<'a> {
-        HtmlStr(s.into())
+    pub fn html<S: Into<Cow<'a, str>>>(s: S) -> Self {
+        Self::HtmlStr(s.into())
     }
 
     fn escape_char<F>(c: char, mut f: F)
@@ -853,9 +851,9 @@ impl<'a> LabelText<'a> {
     /// This includes quotes or suitable delimiters.
     pub fn to_dot_string(&self) -> String {
         match *self {
-            LabelStr(ref s) => format!("\"{}\"", s.escape_default()),
-            EscStr(ref s) => format!("\"{}\"", LabelText::escape_str(s)),
-            HtmlStr(ref s) => format!("<{s}>"),
+            Self::LabelStr(ref s) => format!("\"{}\"", s.escape_default()),
+            Self::EscStr(ref s) => format!("\"{}\"", LabelText::escape_str(s)),
+            Self::HtmlStr(ref s) => format!("<{s}>"),
         }
     }
 }
@@ -1423,38 +1421,39 @@ impl ArrowVertex {
     pub fn to_dot_string(&self) -> String {
         let mut res = String::new();
 
-        pub(crate) use ArrowVertex::*;
         match *self {
-            Box(fill, side)
-            | ICurve(fill, side)
-            | Diamond(fill, side)
-            | Inv(fill, side)
-            | Normal(fill, side) => {
+            Self::Box(fill, side)
+            | Self::ICurve(fill, side)
+            | Self::Diamond(fill, side)
+            | Self::Inv(fill, side)
+            | Self::Normal(fill, side) => {
                 res.push_str(fill.as_slice());
                 match side {
                     Side::Left | Side::Right => res.push_str(side.as_slice()),
                     Side::Both => {}
                 };
             }
-            Dot(fill) => res.push_str(fill.as_slice()),
-            Crow(side) | Curve(side) | Tee(side) | Vee(side) => match side {
-                Side::Left | Side::Right => res.push_str(side.as_slice()),
-                Side::Both => {}
-            },
-            NoArrow => {}
+            Self::Dot(fill) => res.push_str(fill.as_slice()),
+            Self::Crow(side) | Self::Curve(side) | Self::Tee(side) | Self::Vee(side) => {
+                match side {
+                    Side::Left | Side::Right => res.push_str(side.as_slice()),
+                    Side::Both => {}
+                }
+            }
+            Self::NoArrow => {}
         };
         match *self {
-            NoArrow => res.push_str("none"),
-            Normal(_, _) => res.push_str("normal"),
-            Box(_, _) => res.push_str("box"),
-            Crow(_) => res.push_str("crow"),
-            Curve(_) => res.push_str("curve"),
-            ICurve(_, _) => res.push_str("icurve"),
-            Diamond(_, _) => res.push_str("diamond"),
-            Dot(_) => res.push_str("dot"),
-            Inv(_, _) => res.push_str("inv"),
-            Tee(_) => res.push_str("tee"),
-            Vee(_) => res.push_str("vee"),
+            Self::NoArrow => res.push_str("none"),
+            Self::Normal(_, _) => res.push_str("normal"),
+            Self::Box(_, _) => res.push_str("box"),
+            Self::Crow(_) => res.push_str("crow"),
+            Self::Curve(_) => res.push_str("curve"),
+            Self::ICurve(_, _) => res.push_str("icurve"),
+            Self::Diamond(_, _) => res.push_str("diamond"),
+            Self::Dot(_) => res.push_str("dot"),
+            Self::Inv(_, _) => res.push_str("inv"),
+            Self::Tee(_) => res.push_str("tee"),
+            Self::Vee(_) => res.push_str("vee"),
         };
         res
     }
