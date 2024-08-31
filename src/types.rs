@@ -142,12 +142,12 @@ impl<'a> Id<'a> {
 }
 
 /// The text for a graphviz label on a node or edge.
-pub enum LabelText<'a> {
+pub enum Text<'a> {
     /// This kind of label preserves the text directly as is.
     ///
     /// Occurrences of backslashes (`\`) are escaped, and thus appear
     /// as backslashes in the rendered label.
-    LabelStr(Cow<'a, str>),
+    Label(Cow<'a, str>),
 
     /// This kind of label uses the graphviz label escString type:
     /// <https://www.graphviz.org/docs/attr-types/escString>
@@ -159,26 +159,46 @@ pub enum LabelText<'a> {
     /// to break a line (centering the line preceding the `\n`), there
     /// are also the escape sequences `\l` which left-justifies the
     /// preceding line and `\r` which right-justifies it.
-    EscStr(Cow<'a, str>),
+    Esc(Cow<'a, str>),
 
     /// This uses a graphviz [HTML string label][html]. The string is
     /// printed exactly as given, but between `<` and `>`. **No
     /// escaping is performed.**
     ///
     /// [html]: https://www.graphviz.org/doc/info/shapes.html#html
-    HtmlStr(Cow<'a, str>),
+    Html(Cow<'a, str>),
 }
 
-impl<'a> LabelText<'a> {
-    pub fn label<S: Into<Cow<'a, str>>>(s: S) -> Self {
-        Self::LabelStr(s.into())
+impl<'a> Text<'a> {
+    pub fn label(s: impl Into<Cow<'a, str>>) -> Self {
+        Self::Label(s.into())
     }
 
-    pub fn html<S: Into<Cow<'a, str>>>(s: S) -> Self {
-        Self::HtmlStr(s.into())
+    pub fn esc(s: impl Into<Cow<'a, str>>) -> Self {
+        Self::Esc(s.into())
     }
 
-    fn escape_char<F>(c: char, mut f: F)
+    pub fn html(s: impl Into<Cow<'a, str>>) -> Self {
+        Self::Html(s.into())
+    }
+
+    /// Renders text as string suitable for a label in a .dot file.
+    /// This includes quotes or suitable delimiters.
+    pub fn to_escaped_string(&self) -> String {
+        match self {
+            Self::Label(s) => format!("\"{}\"", s.escape_default()),
+            Self::Esc(s) => format!("\"{}\"", Text::escape_str(s)),
+            Self::Html(s) => format!("<{s}>"),
+        }
+    }
+
+    pub fn into_inner(self) -> Cow<'a, str> {
+        match self {
+            Text::Label(s) | Text::Esc(s) | Text::Html(s) => s,
+        }
+    }
+
+    pub(crate) fn escape_char<F>(c: char, mut f: F)
     where
         F: FnMut(char),
     {
@@ -193,22 +213,12 @@ impl<'a> LabelText<'a> {
             }
         }
     }
-    fn escape_str(s: &str) -> String {
+    pub(crate) fn escape_str(s: &str) -> String {
         let mut out = String::with_capacity(s.len());
         for c in s.chars() {
-            LabelText::escape_char(c, |c| out.push(c));
+            Text::escape_char(c, |c| out.push(c));
         }
         out
-    }
-
-    /// Renders text as string suitable for a label in a .dot file.
-    /// This includes quotes or suitable delimiters.
-    pub fn to_dot_string(&self) -> String {
-        match *self {
-            Self::LabelStr(ref s) => format!("\"{}\"", s.escape_default()),
-            Self::EscStr(ref s) => format!("\"{}\"", LabelText::escape_str(s)),
-            Self::HtmlStr(ref s) => format!("<{s}>"),
-        }
     }
 }
 

@@ -3,9 +3,8 @@ use std::io::prelude::*;
 
 use NodeLabels::*;
 
-use super::LabelText::{self, EscStr, HtmlStr, LabelStr};
 use super::{render, Arrow, ArrowVertex, Edges, GraphWalk, Id, Labeller, Nodes, Side, Style};
-use crate::{GraphKind, RankDir, Subgraphs};
+use crate::{GraphKind, RankDir, Subgraphs, Text};
 
 /// each node is an index in a vector in the graph.
 type Node = usize;
@@ -152,14 +151,14 @@ impl<'a> Labeller<'a> for LabelledGraph {
     fn node_id(&'a self, n: &Node) -> Id<'a> {
         id_name(n)
     }
-    fn node_label(&'a self, n: &Node) -> LabelText<'a> {
+    fn node_label(&'a self, n: &Node) -> Text<'a> {
         match self.node_labels[*n] {
-            Some(l) => LabelStr(l.into()),
-            None => LabelStr(id_name(n).name),
+            Some(l) => Text::label(l),
+            None => Text::label(id_name(n).name),
         }
     }
-    fn edge_label(&'a self, e: &&'a Edge) -> LabelText<'a> {
-        LabelStr(e.label.into())
+    fn edge_label(&'a self, e: &&'a Edge) -> Text<'a> {
+        Text::label(e.label)
     }
     fn node_style(&'a self, n: &Node) -> Style {
         self.node_styles[*n]
@@ -167,8 +166,8 @@ impl<'a> Labeller<'a> for LabelledGraph {
     fn edge_style(&'a self, e: &&'a Edge) -> Style {
         e.style
     }
-    fn edge_color(&'a self, e: &&'a Edge) -> Option<LabelText<'a>> {
-        e.color.map(|l| LabelStr(l.into()))
+    fn edge_color(&'a self, e: &&'a Edge) -> Option<Text<'a>> {
+        e.color.map(Text::label)
     }
     fn edge_end_arrow(&'a self, e: &&'a Edge) -> Arrow {
         e.end_arrow.clone()
@@ -189,28 +188,22 @@ impl<'a> Labeller<'a> for LabelledGraphWithEscStrs {
     fn node_id(&'a self, n: &Node) -> Id<'a> {
         self.graph.node_id(n)
     }
-    fn node_label(&'a self, n: &Node) -> LabelText<'a> {
-        match self.graph.node_label(n) {
-            LabelStr(s) | EscStr(s) | HtmlStr(s) => EscStr(s),
-        }
+    fn node_label(&'a self, n: &Node) -> Text<'a> {
+        Text::esc(self.graph.node_label(n).into_inner())
     }
-    fn node_color(&'a self, n: &Node) -> Option<LabelText<'a>> {
-        match self.graph.node_color(n) {
-            Some(LabelStr(s)) | Some(EscStr(s)) | Some(HtmlStr(s)) => Some(EscStr(s)),
-            None => None,
-        }
+    fn node_color(&'a self, n: &Node) -> Option<Text<'a>> {
+        self.graph
+            .node_color(n)
+            .map(|text| Text::esc(text.into_inner()))
     }
-    fn edge_label(&'a self, e: &&'a Edge) -> LabelText<'a> {
-        match self.graph.edge_label(e) {
-            LabelStr(s) | EscStr(s) | HtmlStr(s) => EscStr(s),
-        }
+    fn edge_label(&'a self, e: &&'a Edge) -> Text<'a> {
+        Text::esc(self.graph.edge_label(e).into_inner())
     }
 
-    fn edge_color(&'a self, e: &&'a Edge) -> Option<LabelText<'a>> {
-        match self.graph.edge_color(e) {
-            Some(LabelStr(s)) | Some(EscStr(s)) | Some(HtmlStr(s)) => Some(EscStr(s)),
-            None => None,
-        }
+    fn edge_color(&'a self, e: &&'a Edge) -> Option<Text<'a>> {
+        self.graph
+            .edge_color(e)
+            .map(|text| Text::esc(text.into_inner()))
     }
 }
 

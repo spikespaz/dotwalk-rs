@@ -183,11 +183,11 @@
 //!     fn node_id(&'a self, n: &Nd) -> dot::Id<'a> {
 //!         dot::Id::new(format!("N{}", n)).unwrap()
 //!     }
-//!     fn node_label(&self, n: &Nd) -> dot::LabelText<'_> {
-//!         dot::LabelText::LabelStr(self.nodes[*n].into())
+//!     fn node_label(&self, n: &Nd) -> dot::Text<'_> {
+//!         dot::Text::label(self.nodes[*n])
 //!     }
-//!     fn edge_label(&self, _: &Ed<'_>) -> dot::LabelText<'_> {
-//!         dot::LabelText::LabelStr("&sube;".into())
+//!     fn edge_label(&self, _: &Ed<'_>) -> dot::Text<'_> {
+//!         dot::Text::label("&sube;")
 //!     }
 //! }
 //!
@@ -264,12 +264,12 @@
 //!     fn node_id(&'a self, n: &Nd<'a>) -> dot::Id<'a> {
 //!         dot::Id::new(format!("N{}", n.0)).unwrap()
 //!     }
-//!     fn node_label(&self, n: &Nd<'_>) -> dot::LabelText<'_> {
+//!     fn node_label(&self, n: &Nd<'_>) -> dot::Text<'_> {
 //!         let &(i, _) = n;
-//!         dot::LabelText::LabelStr(self.nodes[i].into())
+//!         dot::Text::label(self.nodes[i])
 //!     }
-//!     fn edge_label(&self, _: &Ed<'_>) -> dot::LabelText<'_> {
-//!         dot::LabelText::LabelStr("&sube;".into())
+//!     fn edge_label(&self, _: &Ed<'_>) -> dot::Text<'_> {
+//!         dot::Text::label("&sube;")
 //!     }
 //! }
 //!
@@ -470,22 +470,22 @@ pub trait Labeller<'a> {
     /// is returned, no `shape` attribute is specified.
     ///
     /// [1]: https://www.graphviz.org/doc/info/shapes.html
-    fn node_shape(&'a self, _node: &Self::Node) -> Option<LabelText<'a>> {
+    fn node_shape(&'a self, _node: &Self::Node) -> Option<Text<'a>> {
         None
     }
 
     /// Maps `n` to a label that will be used in the rendered output.
     /// The label need not be unique, and may be the empty string; the
     /// default is just the output from `node_id`.
-    fn node_label(&'a self, n: &Self::Node) -> LabelText<'a> {
-        LabelText::LabelStr(self.node_id(n).name)
+    fn node_label(&'a self, n: &Self::Node) -> Text<'a> {
+        Text::Label(self.node_id(n).name)
     }
 
     /// Maps `e` to a label that will be used in the rendered output.
     /// The label need not be unique, and may be the empty string; the
     /// default is in fact the empty string.
-    fn edge_label(&'a self, _e: &Self::Edge) -> LabelText<'a> {
-        LabelText::LabelStr("".into())
+    fn edge_label(&'a self, _e: &Self::Edge) -> Text<'a> {
+        Text::Label("".into())
     }
 
     /// Maps `n` to a style that will be used in the rendered output.
@@ -504,7 +504,7 @@ pub trait Labeller<'a> {
     /// is returned, no `color` attribute is specified.
     ///
     /// [1]: https://graphviz.gitlab.io/_pages/doc/info/colors.html
-    fn node_color(&'a self, _node: &Self::Node) -> Option<LabelText<'a>> {
+    fn node_color(&'a self, _node: &Self::Node) -> Option<Text<'a>> {
         None
     }
 
@@ -534,7 +534,7 @@ pub trait Labeller<'a> {
     /// is returned, no `color` attribute is specified.
     ///
     /// [1]: https://graphviz.gitlab.io/_pages/doc/info/colors.html
-    fn edge_color(&'a self, _e: &Self::Edge) -> Option<LabelText<'a>> {
+    fn edge_color(&'a self, _e: &Self::Edge) -> Option<Text<'a>> {
         None
     }
 
@@ -577,8 +577,8 @@ pub trait Labeller<'a> {
     }
 
     /// Maps `s` to the corresponding subgraph label.
-    fn subgraph_label(&'a self, _s: &Self::Subgraph) -> LabelText<'a> {
-        LabelText::LabelStr("".into())
+    fn subgraph_label(&'a self, _s: &Self::Subgraph) -> Text<'a> {
+        Text::Label("".into())
     }
 
     /// Maps `s` to the corresponding subgraph style (default to `Style::None`).
@@ -588,13 +588,13 @@ pub trait Labeller<'a> {
 
     /// Maps `s` to the corresponding subgraph shape.
     /// If `None` is returned (default), no `shape` attribute is specified.
-    fn subgraph_shape(&'a self, _s: &Self::Subgraph) -> Option<LabelText<'a>> {
+    fn subgraph_shape(&'a self, _s: &Self::Subgraph) -> Option<Text<'a>> {
         None
     }
 
     /// Maps `s` to the corresponding subgraph color (default to `Style::None`).
     /// If `None` is returned (default), no `color` attribute is specified.
-    fn subgraph_color(&'a self, _s: &Self::Subgraph) -> Option<LabelText<'a>> {
+    fn subgraph_color(&'a self, _s: &Self::Subgraph) -> Option<Text<'a>> {
         None
     }
 

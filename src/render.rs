@@ -113,8 +113,8 @@ where
         write!(text, "    {}", graph.node_id(n).as_slice()).unwrap();
 
         if !options.contains(&RenderOption::NoNodeLabels) {
-            let escaped = &graph.node_label(n).to_dot_string();
-            write!(text, "[label={escaped}]").unwrap();
+            let label = &graph.node_label(n).to_escaped_string();
+            write!(text, "[label={label}]").unwrap();
         }
 
         let style = graph.node_style(n);
@@ -123,13 +123,13 @@ where
         }
 
         if !options.contains(&RenderOption::NoNodeColors) {
-            if let Some(c) = graph.node_color(n) {
-                write!(text, "[color={}]", c.to_dot_string()).unwrap();
+            if let Some(color) = graph.node_color(n) {
+                write!(text, "[color={}]", color.to_escaped_string()).unwrap();
             }
         }
 
-        if let Some(s) = graph.node_shape(n) {
-            write!(text, "[shape={}]", &s.to_dot_string()).unwrap();
+        if let Some(shape) = graph.node_shape(n) {
+            write!(text, "[shape={}]", &shape.to_escaped_string()).unwrap();
         }
 
         for (name, value) in graph.node_attrs(n).into_iter() {
@@ -169,8 +169,8 @@ where
         writeln!(text, " {{").unwrap();
 
         if !options.contains(&RenderOption::NoNodeLabels) {
-            let escaped = &graph.subgraph_label(s).to_dot_string();
-            writeln!(text, "    label={escaped};").unwrap();
+            let label = &graph.subgraph_label(s).to_escaped_string();
+            writeln!(text, "    label={label};").unwrap();
         }
 
         let style = graph.subgraph_style(s);
@@ -180,13 +180,13 @@ where
         }
 
         if !options.contains(&RenderOption::NoNodeColors) {
-            if let Some(c) = graph.subgraph_color(s) {
-                writeln!(text, "    color={};", c.to_dot_string()).unwrap();
+            if let Some(color) = graph.subgraph_color(s) {
+                writeln!(text, "    color={};", color.to_escaped_string()).unwrap();
             }
         }
 
-        if let Some(s) = graph.subgraph_shape(s) {
-            writeln!(text, "    shape={};", &s.to_dot_string()).unwrap();
+        if let Some(shape) = graph.subgraph_shape(s) {
+            writeln!(text, "    shape={};", &shape.to_escaped_string()).unwrap();
         }
 
         for (name, value) in graph.subgraph_attrs(s).into_iter() {
@@ -221,7 +221,6 @@ where
 {
     let mut text = Vec::new();
     for e in edges.iter() {
-        let escaped_label = &graph.edge_label(e).to_dot_string();
         let start_arrow = graph.edge_start_arrow(e);
         let end_arrow = graph.edge_end_arrow(e);
         let start_port = graph
@@ -255,7 +254,8 @@ where
         .unwrap();
 
         if !options.contains(&RenderOption::NoEdgeLabels) {
-            write!(text, "[label={escaped_label}]").unwrap();
+            let label = graph.edge_label(e).to_escaped_string();
+            write!(text, "[label={label}]").unwrap();
         }
 
         let style = graph.edge_style(e);
@@ -264,8 +264,8 @@ where
         }
 
         if !options.contains(&RenderOption::NoEdgeColors) {
-            if let Some(c) = graph.edge_color(e) {
-                write!(text, "[color={}]", c.to_dot_string()).unwrap();
+            if let Some(color) = graph.edge_color(e) {
+                write!(text, "[color={}]", color.to_escaped_string()).unwrap();
             }
         }
 
