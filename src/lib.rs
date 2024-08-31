@@ -991,87 +991,7 @@ where
 
     render_subgraphs(w, g, &g.subgraphs(), options)?;
     render_nodes(w, g, &g.nodes(), options)?;
-
-    let mut text = Vec::new();
-    for e in g.edges().iter() {
-        let escaped_label = &g.edge_label(e).to_dot_string();
-        let start_arrow = g.edge_start_arrow(e);
-        let end_arrow = g.edge_end_arrow(e);
-        let start_port = g
-            .edge_start_port(e)
-            .map(|p| format!(":{}", p.name))
-            .unwrap_or_default();
-        let end_port = g
-            .edge_end_port(e)
-            .map(|p| format!(":{}", p.name))
-            .unwrap_or_default();
-        let start_point = g.edge_start_point(e).map(|p| p.to_code()).unwrap_or("");
-        let end_point = g.edge_end_point(e).map(|p| p.to_code()).unwrap_or("");
-
-        write!(w, "    ")?;
-        let source = g.source(e);
-        let target = g.target(e);
-        let source_id = g.node_id(&source);
-        let target_id = g.node_id(&target);
-
-        write!(
-            text,
-            "{}{}{} {} {}{}{}",
-            source_id.as_slice(),
-            start_port,
-            start_point,
-            g.kind().edge_op(),
-            target_id.as_slice(),
-            end_port,
-            end_point,
-        )
-        .unwrap();
-
-        if !options.contains(&RenderOption::NoEdgeLabels) {
-            write!(text, "[label={escaped_label}]").unwrap();
-        }
-
-        let style = g.edge_style(e);
-        if !options.contains(&RenderOption::NoEdgeStyles) && style != Style::None {
-            write!(text, "[style=\"{}\"]", style.as_slice()).unwrap();
-        }
-
-        if !options.contains(&RenderOption::NoEdgeColors) {
-            if let Some(c) = g.edge_color(e) {
-                write!(text, "[color={}]", c.to_dot_string()).unwrap();
-            }
-        }
-
-        if !options.contains(&RenderOption::NoArrows)
-            && (!start_arrow.is_default() || !end_arrow.is_default())
-        {
-            write!(text, "[").unwrap();
-            if !end_arrow.is_default() {
-                write!(text, "arrowhead=\"{}\"", end_arrow.to_dot_string()).unwrap();
-            }
-            if !start_arrow.is_default() {
-                if *text.last().unwrap() != b'[' {
-                    write!(text, " ").unwrap();
-                }
-                write!(
-                    text,
-                    "dir=\"both\" arrowtail=\"{}\"",
-                    start_arrow.to_dot_string()
-                )
-                .unwrap();
-            }
-            write!(text, "]").unwrap();
-        }
-
-        for (name, value) in g.edge_attrs(e).into_iter() {
-            write!(text, "{name}={value}").unwrap();
-        }
-
-        writeln!(text, ";").unwrap();
-        w.write_all(&text)?;
-
-        text.clear();
-    }
+    render_edges(w, g, &g.edges(), options)?;
 
     writeln!(w, "}}")
 }
@@ -1179,6 +1099,103 @@ where
         }
 
         writeln!(text, "}}").unwrap();
+
+        w.write_all(&text)?;
+        text.clear();
+    }
+    Ok(())
+}
+
+pub fn render_edges<'a, N, E, S, G, W>(
+    w: &mut W,
+    graph: &'a G,
+    edges: &Edges<'a, E>,
+    options: &[RenderOption],
+) -> io::Result<()>
+where
+    W: Write,
+    N: Clone + 'a,
+    E: Clone + 'a,
+    S: Clone + 'a,
+    G: Labeller<'a, Node = N, Edge = E, Subgraph = S>
+        + GraphWalk<'a, Node = N, Edge = E, Subgraph = S>,
+{
+    let mut text = Vec::new();
+    for e in edges.iter() {
+        let escaped_label = &graph.edge_label(e).to_dot_string();
+        let start_arrow = graph.edge_start_arrow(e);
+        let end_arrow = graph.edge_end_arrow(e);
+        let start_port = graph
+            .edge_start_port(e)
+            .map(|p| format!(":{}", p.name))
+            .unwrap_or_default();
+        let end_port = graph
+            .edge_end_port(e)
+            .map(|p| format!(":{}", p.name))
+            .unwrap_or_default();
+        let start_point = graph.edge_start_point(e).map(|p| p.to_code()).unwrap_or("");
+        let end_point = graph.edge_end_point(e).map(|p| p.to_code()).unwrap_or("");
+
+        write!(w, "    ")?;
+        let source = graph.source(e);
+        let target = graph.target(e);
+        let source_id = graph.node_id(&source);
+        let target_id = graph.node_id(&target);
+
+        write!(
+            text,
+            "{}{}{} {} {}{}{}",
+            source_id.as_slice(),
+            start_port,
+            start_point,
+            graph.kind().edge_op(),
+            target_id.as_slice(),
+            end_port,
+            end_point,
+        )
+        .unwrap();
+
+        if !options.contains(&RenderOption::NoEdgeLabels) {
+            write!(text, "[label={escaped_label}]").unwrap();
+        }
+
+        let style = graph.edge_style(e);
+        if !options.contains(&RenderOption::NoEdgeStyles) && style != Style::None {
+            write!(text, "[style=\"{}\"]", style.as_slice()).unwrap();
+        }
+
+        if !options.contains(&RenderOption::NoEdgeColors) {
+            if let Some(c) = graph.edge_color(e) {
+                write!(text, "[color={}]", c.to_dot_string()).unwrap();
+            }
+        }
+
+        if !options.contains(&RenderOption::NoArrows)
+            && (!start_arrow.is_default() || !end_arrow.is_default())
+        {
+            write!(text, "[").unwrap();
+            if !end_arrow.is_default() {
+                write!(text, "arrowhead=\"{}\"", end_arrow.to_dot_string()).unwrap();
+            }
+            if !start_arrow.is_default() {
+                if *text.last().unwrap() != b'[' {
+                    write!(text, " ").unwrap();
+                }
+                write!(
+                    text,
+                    "dir=\"both\" arrowtail=\"{}\"",
+                    start_arrow.to_dot_string()
+                )
+                .unwrap();
+            }
+            write!(text, "]").unwrap();
+        }
+
+        for (name, value) in graph.edge_attrs(e).into_iter() {
+            write!(text, "{name}={value}").unwrap();
+        }
+
+        writeln!(text, ";").unwrap();
 
         w.write_all(&text)?;
         text.clear();
