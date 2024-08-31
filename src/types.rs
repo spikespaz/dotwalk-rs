@@ -262,16 +262,16 @@ impl Style {
 
 /// Arrow modifier that determines if the shape is empty or filled.
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
-pub enum Fill {
+pub enum ShapeFill {
     Open,
     Filled,
 }
 
-impl Fill {
+impl ShapeFill {
     pub const fn as_static_str(self) -> &'static str {
         match self {
-            Fill::Open => "o",
-            Fill::Filled => "",
+            ShapeFill::Open => "o",
+            ShapeFill::Filled => "",
         }
     }
 }
@@ -303,21 +303,21 @@ pub enum ArrowVertex {
     None,
     /// Arrow that ends in a triangle. Basically a normal arrow.
     /// NOTE: there is error in official documentation, this supports both fill and side clipping
-    Normal(Fill, Side),
+    Normal(ShapeFill, Side),
     /// Arrow ending in a small square box
-    Box(Fill, Side),
+    Box(ShapeFill, Side),
     /// Arrow ending in a three branching lines also called crow's foot
     Crow(Side),
     /// Arrow ending in a curve
     Curve(Side),
     /// Arrow ending in an inverted curve
-    ICurve(Fill, Side),
+    ICurve(ShapeFill, Side),
     /// Arrow ending in an diamond shaped rectangular shape.
-    Diamond(Fill, Side),
+    Diamond(ShapeFill, Side),
     /// Arrow ending in a circle.
-    Dot(Fill),
+    Dot(ShapeFill),
     /// Arrow ending in an inverted triangle.
-    Inv(Fill, Side),
+    Inv(ShapeFill, Side),
     /// Arrow ending with a T shaped arrow.
     Tee(Side),
     /// Arrow ending with a V shaped arrow.
@@ -332,12 +332,12 @@ impl ArrowVertex {
 
     /// Constructor which returns normal arrow.
     pub fn normal() -> ArrowVertex {
-        ArrowVertex::Normal(Fill::Filled, Side::Both)
+        ArrowVertex::Normal(ShapeFill::Filled, Side::Both)
     }
 
     /// Constructor which returns a regular box arrow.
     pub fn boxed() -> ArrowVertex {
-        ArrowVertex::Box(Fill::Filled, Side::Both)
+        ArrowVertex::Box(ShapeFill::Filled, Side::Both)
     }
 
     /// Constructor which returns a regular crow arrow.
@@ -352,22 +352,22 @@ impl ArrowVertex {
 
     /// Constructor which returns an inverted curve arrow.
     pub fn icurve() -> ArrowVertex {
-        ArrowVertex::ICurve(Fill::Filled, Side::Both)
+        ArrowVertex::ICurve(ShapeFill::Filled, Side::Both)
     }
 
     /// Constructor which returns a diamond arrow.
     pub fn diamond() -> ArrowVertex {
-        ArrowVertex::Diamond(Fill::Filled, Side::Both)
+        ArrowVertex::Diamond(ShapeFill::Filled, Side::Both)
     }
 
     /// Constructor which returns a circle shaped arrow.
     pub fn dot() -> ArrowVertex {
-        ArrowVertex::Diamond(Fill::Filled, Side::Both)
+        ArrowVertex::Dot(ShapeFill::Filled)
     }
 
     /// Constructor which returns an inverted triangle arrow.
     pub fn inv() -> ArrowVertex {
-        ArrowVertex::Inv(Fill::Filled, Side::Both)
+        ArrowVertex::Inv(ShapeFill::Filled, Side::Both)
     }
 
     /// Constructor which returns a T shaped arrow.
