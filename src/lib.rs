@@ -957,7 +957,7 @@ where
     }
 
     for (name, value) in g.graph_attrs().iter() {
-        writeln!(w, "    {name}={value}").unwrap();
+        writeln!(w, "    {name}={value}")?;
     }
 
     // Global graph properties
