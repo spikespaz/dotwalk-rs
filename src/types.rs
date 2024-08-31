@@ -11,7 +11,7 @@ pub enum GraphKind {
 impl GraphKind {
     /// The keyword to use to introduce the graph.
     /// Determines which edge syntax must be used, and default style.
-    pub fn keyword(&self) -> &'static str {
+    pub const fn as_keyword(&self) -> &'static str {
         match *self {
             GraphKind::Directed => "digraph",
             GraphKind::Undirected => "graph",
@@ -19,7 +19,7 @@ impl GraphKind {
     }
 
     /// The edgeop syntax to use for this graph kind.
-    pub fn edge_op(&self) -> &'static str {
+    pub const fn as_edge_op(&self) -> &'static str {
         match *self {
             GraphKind::Directed => "->",
             GraphKind::Undirected => "--",
@@ -38,7 +38,7 @@ pub enum RankDir {
 }
 
 impl RankDir {
-    pub fn as_slice(self) -> &'static str {
+    pub const fn as_static_str(self) -> &'static str {
         match self {
             RankDir::TopBottom => "TB",
             RankDir::LeftRight => "LR",
@@ -240,7 +240,7 @@ pub enum Style {
 }
 
 impl Style {
-    pub fn as_slice(self) -> &'static str {
+    pub const fn as_static_str(self) -> &'static str {
         match self {
             Style::None => "",
             Style::Solid => "solid",
@@ -264,7 +264,7 @@ pub enum Fill {
 }
 
 impl Fill {
-    pub fn as_slice(self) -> &'static str {
+    pub const fn as_static_str(self) -> &'static str {
         match self {
             Fill::Open => "o",
             Fill::Filled => "",
@@ -282,7 +282,7 @@ pub enum Side {
 }
 
 impl Side {
-    pub fn as_slice(self) -> &'static str {
+    pub const fn as_static_str(self) -> &'static str {
         match self {
             Side::Left => "l",
             Side::Right => "r",
@@ -386,16 +386,16 @@ impl ArrowVertex {
             | Self::Diamond(fill, side)
             | Self::Inv(fill, side)
             | Self::Normal(fill, side) => {
-                res.push_str(fill.as_slice());
+                res.push_str(fill.as_static_str());
                 match side {
-                    Side::Left | Side::Right => res.push_str(side.as_slice()),
+                    Side::Left | Side::Right => res.push_str(side.as_static_str()),
                     Side::Both => {}
                 };
             }
-            Self::Dot(fill) => res.push_str(fill.as_slice()),
+            Self::Dot(fill) => res.push_str(fill.as_static_str()),
             Self::Crow(side) | Self::Curve(side) | Self::Tee(side) | Self::Vee(side) => {
                 match side {
-                    Side::Left | Side::Right => res.push_str(side.as_slice()),
+                    Side::Left | Side::Right => res.push_str(side.as_static_str()),
                     Side::Both => {}
                 }
             }
@@ -502,7 +502,7 @@ pub enum CompassPoint {
 }
 
 impl CompassPoint {
-    pub const fn to_code(&self) -> &'static str {
+    pub const fn as_static_str(&self) -> &'static str {
         use CompassPoint as C;
         match self {
             C::North => ":n",

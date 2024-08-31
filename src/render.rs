@@ -46,11 +46,16 @@ where
         + GraphWalk<'a, Node = N, Edge = E, Subgraph = S>,
     W: Write,
 {
-    writeln!(w, "{} {} {{", g.kind().keyword(), g.graph_id().as_slice())?;
+    writeln!(
+        w,
+        "{} {} {{",
+        g.kind().as_keyword(),
+        g.graph_id().as_slice()
+    )?;
 
     if g.kind() == GraphKind::Directed {
         if let Some(rankdir) = g.rank_dir() {
-            writeln!(w, "    rankdir=\"{}\";", rankdir.as_slice())?;
+            writeln!(w, "    rankdir=\"{}\";", rankdir.as_static_str())?;
         }
     }
 
@@ -119,7 +124,7 @@ where
 
         let style = graph.node_style(n);
         if !options.contains(&RenderOption::NoNodeStyles) && style != Style::None {
-            write!(text, "[style=\"{}\"]", style.as_slice()).unwrap();
+            write!(text, "[style=\"{}\"]", style.as_static_str()).unwrap();
         }
 
         if !options.contains(&RenderOption::NoNodeColors) {
@@ -176,7 +181,7 @@ where
         let style = graph.subgraph_style(s);
         let var_name = style != Style::None;
         if !options.contains(&RenderOption::NoNodeStyles) && var_name {
-            writeln!(text, "    style=\"{}\";", style.as_slice()).unwrap();
+            writeln!(text, "    style=\"{}\";", style.as_static_str()).unwrap();
         }
 
         if !options.contains(&RenderOption::NoNodeColors) {
@@ -231,8 +236,14 @@ where
             .edge_end_port(e)
             .map(|p| format!(":{}", p.name))
             .unwrap_or_default();
-        let start_point = graph.edge_start_point(e).map(|p| p.to_code()).unwrap_or("");
-        let end_point = graph.edge_end_point(e).map(|p| p.to_code()).unwrap_or("");
+        let start_point = graph
+            .edge_start_point(e)
+            .map(|p| p.as_static_str())
+            .unwrap_or("");
+        let end_point = graph
+            .edge_end_point(e)
+            .map(|p| p.as_static_str())
+            .unwrap_or("");
 
         write!(w, "    ")?;
         let source = graph.source(e);
@@ -246,7 +257,7 @@ where
             source_id.as_slice(),
             start_port,
             start_point,
-            graph.kind().edge_op(),
+            graph.kind().as_edge_op(),
             target_id.as_slice(),
             end_port,
             end_point,
@@ -260,7 +271,7 @@ where
 
         let style = graph.edge_style(e);
         if !options.contains(&RenderOption::NoEdgeStyles) && style != Style::None {
-            write!(text, "[style=\"{}\"]", style.as_slice()).unwrap();
+            write!(text, "[style=\"{}\"]", style.as_static_str()).unwrap();
         }
 
         if !options.contains(&RenderOption::NoEdgeColors) {
