@@ -48,7 +48,7 @@ impl RankDir {
     }
 }
 
-#[derive(Debug)]
+#[derive(Copy, Clone, Debug, PartialEq)]
 pub enum IdError {
     EmptyName,
     InvalidStartChar(char),
@@ -100,6 +100,7 @@ impl std::fmt::Display for IdError {
 // So in the end I decided to use the third approach described above.
 
 /// `Id` is a Graphviz `ID`.
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub struct Id<'a> {
     pub(crate) name: Cow<'a, str>,
 }
@@ -127,7 +128,7 @@ impl<'a> Id<'a> {
     ///
     /// Passing an invalid string (containing spaces, brackets,
     /// quotes, ...) will return an empty `Err` value.
-    pub fn new<Name: Into<Cow<'a, str>>>(name: Name) -> Result<Id<'a>, IdError> {
+    pub fn new(name: impl Into<Cow<'a, str>>) -> Result<Id<'a>, IdError> {
         let name = name.into();
         match name.chars().next() {
             Some(c) if c.is_ascii_alphabetic() || c == '_' => {}
@@ -146,6 +147,7 @@ impl<'a> Id<'a> {
 }
 
 /// The text for a graphviz label on a node or edge.
+#[derive(Clone, Hash, PartialEq, Eq)]
 pub enum Text<'a> {
     /// This kind of label preserves the text directly as is.
     ///
@@ -202,10 +204,7 @@ impl<'a> Text<'a> {
         }
     }
 
-    pub(crate) fn escape_char<F>(c: char, mut f: F)
-    where
-        F: FnMut(char),
-    {
+    pub(crate) fn escape_char(c: char, mut f: impl FnMut(char)) {
         match c {
             // not escaping \\, since Graphviz escString needs to
             // interpret backslashes; see EscStr above.
@@ -493,6 +492,7 @@ macro_rules! impl_arrow_from_vertex_array {
 impl_arrow_from_vertex_array!(1 2 3 4);
 
 /// <https://graphviz.org/docs/attr-types/portPos/>
+#[derive(Clone, Copy, Hash, PartialEq, Eq)]
 pub enum CompassPoint {
     North,
     NorthEast,
