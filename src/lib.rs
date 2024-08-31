@@ -962,6 +962,8 @@ impl GraphKind {
 
 /// This structure holds all information that can describe an arrow connected to
 /// either start or end of an edge.
+///
+/// <https://graphviz.org/doc/info/arrows.html>
 #[derive(Clone, Hash, PartialEq, Eq)]
 pub struct Arrow {
     pub arrows: Vec<ArrowVertex>,
@@ -1011,13 +1013,21 @@ impl Default for Arrow {
     }
 }
 
-impl<const N: usize> From<[ArrowVertex; N]> for Arrow {
-    fn from(shape: [ArrowVertex; N]) -> Arrow {
-        Arrow {
-            arrows: shape.to_vec(),
-        }
-    }
+macro_rules! impl_arrow_from_vertex_array {
+    ( $($n:literal)+ ) => {
+        $(
+            impl From<[ArrowVertex; $n]> for Arrow {
+                fn from(shape: [ArrowVertex; $n]) -> Arrow {
+                    Arrow {
+                        arrows: shape.to_vec(),
+                    }
+                }
+            }
+        )+
+    };
 }
+
+impl_arrow_from_vertex_array!(1 2 3 4);
 
 /// Arrow modifier that determines if the shape is empty or filled.
 #[derive(Clone, Copy, Hash, PartialEq, Eq)]
