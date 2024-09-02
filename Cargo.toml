@@ -12,15 +12,7 @@ documentation = "https://docs.rs/dotwalk"
 homepage = "https://github.com/spikespaz/dotwalk-rs"
 repository = "https://github.com/spikespaz/dotwalk-rs"
 license = "MIT OR Apache-2.0"
-keywords = [
-    "graph",
-    "graphviz",
-    "render-graph",
-    "data",
-    "dot",
-    "language",
-    "graph-algorithms",
-]
+keywords = ["graph", "graphviz", "render-graph", "data", "dot"]
 categories = [
     "visualization",
     "algorithms",
